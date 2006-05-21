@@ -1,4 +1,4 @@
-use Test::More no_plan;
+use Test::More tests => 48;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -18,6 +18,10 @@ my $class = AccessorGroupsRO->new;
     $class->mk_group_ro_accessors('warnings', 'DESTROY');
 
     ok($warned);
+
+    # restore non-accessorized DESTROY
+    no warnings;
+    *AccessorGroupsRO::DESTROY = sub {};
 };
 
 foreach (qw/singlefield multiple1 multiple2/) {

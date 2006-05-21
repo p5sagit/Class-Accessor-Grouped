@@ -18,7 +18,4 @@ foreach (qw/single multiple listref/) {
     *{"set_$_"} = \&Class::Accessor::Grouped::set_simple;
 };
 
-# make cleanup DESTROY happy
-sub get_warnings {};
-
 1;

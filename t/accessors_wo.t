@@ -1,10 +1,10 @@
-use Test::More tests => 58;
+use Test::More tests => 38;
 use strict;
 use warnings;
 use lib 't/lib';
-use AccessorGroups;
+use AccessorGroupsWO;
 
-my $class = AccessorGroups->new;
+my $class = AccessorGroupsWO->new;
 
 {
     my $warned = 0;
@@ -15,13 +15,13 @@ my $class = AccessorGroups->new;
         };
     };
 
-    $class->mk_group_accessors('warnings', 'DESTROY');
+    $class->mk_group_wo_accessors('warnings', 'DESTROY');
 
     ok($warned);
 
     # restore non-accessorized DESTROY
     no warnings;
-    *AccessorGroups::DESTROY = sub {};
+    *AccessorGroupsWO::DESTROY = sub {};
 };
 
 foreach (qw/singlefield multiple1 multiple2/) {
@@ -30,24 +30,24 @@ foreach (qw/singlefield multiple1 multiple2/) {
 
     can_ok($class, $name, $alias);
 
-    is($class->$name, undef);
-    is($class->$alias, undef);
-
-    # get/set via name
+    # set via name
     is($class->$name('a'), 'a');
-    is($class->$name, 'a');
     is($class->{$name}, 'a');
 
-    # alias gets same as name
-    is($class->$alias, 'a');
-
-    # get/set via alias
+    # alias sets same as name
     is($class->$alias('b'), 'b');
-    is($class->$alias, 'b');
     is($class->{$name}, 'b');
 
-    # alias gets same as name
-    is($class->$name, 'b');
+    # die on get via name/alias
+    eval {
+        $class->$name;
+    };
+    ok($@ =~ /cannot access/);
+
+    eval {
+        $class->$alias;
+    };
+    ok($@ =~ /cannot access/);
 };
 
 foreach (qw/lr1 lr2/) {
@@ -58,22 +58,22 @@ foreach (qw/lr1 lr2/) {
     can_ok($class, $name, $alias);
     ok(!$class->can($field));
 
-    is($class->$name, undef);
-    is($class->$alias, undef);
-
-    # get/set via name
+    # set via name
     is($class->$name('c'), 'c');
-    is($class->$name, 'c');
     is($class->{$field}, 'c');
 
-    # alias gets same as name
-    is($class->$alias, 'c');
-
-    # get/set via alias
+    # alias sets same as name
     is($class->$alias('d'), 'd');
-    is($class->$alias, 'd');
     is($class->{$field}, 'd');
 
-    # alias gets same as name
-    is($class->$name, 'd');
+    # die on get via name/alias
+    eval {
+        $class->$name;
+    };
+    ok($@ =~ /cannot access/);
+
+    eval {
+        $class->$alias;
+    };
+    ok($@ =~ /cannot access/);
 };
