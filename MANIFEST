@@ -1,0 +1,10 @@
+Build.PL
+Changes
+lib/Class/Accessor/Grouped.pm
+MANIFEST			This list of files
+MANIFEST.SKIP
+t/pod-coverage.t
+t/pod.t
+META.yml
+Makefile.PL
+README
