@@ -27,6 +27,7 @@ aegis.log$
 \.bak$
 \.swp$
 \.tdy$
+\.tmp$
 \#$
 \b\.#
 
