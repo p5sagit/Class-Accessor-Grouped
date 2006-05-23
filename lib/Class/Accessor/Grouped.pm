@@ -1,7 +1,7 @@
 package Class::Accessor::Grouped;
 use strict;
 use warnings;
-use Carp::Clan;
+use Carp;
 use vars qw($VERSION);
 
 $VERSION = '0.01';
