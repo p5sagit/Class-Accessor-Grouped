@@ -303,7 +303,7 @@ sub get_inherited {
 
     my @supers = Class::ISA::self_and_super_path(ref $self || $self);
     foreach (@supers) {
-        return ${$_.'::_'.$get} if ${$_.'::_'.$get};
+        return ${$_.'::_'.$get} if defined(${$_.'::_'.$get});
     };
 }
 
