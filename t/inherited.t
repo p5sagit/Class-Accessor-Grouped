@@ -1,4 +1,4 @@
-use Test::More tests => 29;
+use Test::More tests => 32;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -61,3 +61,17 @@ eval {
     $dying->killme('foo');
 };
 ok($@ =~ /Cannot set.*is not hash-based/);
+
+# make sure we're get defined items, even 0, ''
+BaseInheritedGroups->basefield('base');
+SuperInheritedGroups->basefield(0);
+is(SuperInheritedGroups->basefield, 0);
+
+BaseInheritedGroups->basefield('base');
+SuperInheritedGroups->basefield('');
+is(SuperInheritedGroups->basefield, '');
+
+BaseInheritedGroups->basefield('base');
+SuperInheritedGroups->basefield(undef);
+is(SuperInheritedGroups->basefield, 'base');
+
