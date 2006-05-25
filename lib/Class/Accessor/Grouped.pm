@@ -2,6 +2,8 @@ package Class::Accessor::Grouped;
 use strict;
 use warnings;
 use Carp;
+use Class::ISA;
+use Scalar::Util qw/blessed reftype/;
 use vars qw($VERSION);
 
 $VERSION = '0.01';
@@ -267,6 +269,76 @@ for the field name passed as an argument.
 sub set_simple {
   my ($self, $set, $val) = @_;
   return $self->{$set} = $val;
+}
+
+
+=head2 get_inherited
+
+=over 4
+
+=item Arguments: $field
+
+Returns: $value
+
+=back
+
+Simple getter for Classes and hash-based objects which returns the value for the field name passed as
+an argument. This behaves much like L<Class::Data::Accessor> where the field can be set in a
+base class, inherited and changed in subclasses, and inherited and changed for object instances.
+
+=cut
+
+sub get_inherited {
+    my ($self, $get) = @_;
+
+    if (blessed $self) {
+        if (reftype($self) eq 'HASH' && exists $self->{$get}) {
+            return $self->{$get};
+        } elsif (reftype($self) ne 'HASH') {
+            croak('Cannot get inherited value on an object instance that is not hash-based');
+        };
+    };
+
+    no strict 'refs';
+
+    my @supers = Class::ISA::self_and_super_path(ref $self || $self);
+    foreach (@supers) {
+        return ${$_.'::_'.$get} if ${$_.'::_'.$get};
+    };
+}
+
+=head2 set_inherited
+
+=over 4
+
+=item Arguments: $field, $new_value
+
+Returns: $new_value
+
+=back
+
+Simple setter for Classes and hash-based objects which sets and then returns the value
+for the field name passed as an argument. When called on a hash-based object it will set the appropriate
+hash key value. When called on a class, it will set a class level variable.
+
+B<Note:>: This method will die if you try to set an object variable on a non hash-based object.
+
+=cut
+
+sub set_inherited {
+    my ($self, $set, $val) = @_;
+
+    if (blessed $self) {
+        if (reftype($self) eq 'HASH') {
+            return $self->{$set} = $val;
+        } else {
+            croak('Cannot set inherited value on an object instance that is not hash-based');
+        };
+    } else {
+        no strict 'refs';
+
+        return ${$self.'::_'.$set} = $val;
+    };
 }
 
 1;

@@ -7,7 +7,9 @@ Module::Build->new(
     module_name => 'Class::Accessor::Grouped',
     license => 'perl',
     requires => {
-        Carp => 0
+        'Carp' => 0,
+        'Scalar::Util' => 0,
+        'Class::ISA' => 0
     },
     create_makefile_pl => 'passthrough',
     create_readme => 1,

@@ -9,8 +9,12 @@ README
 t/accessors.t
 t/accessors_ro.t
 t/accessors_wo.t
+t/inherited.t
 t/lib/AccessorGroups.pm
 t/lib/AccessorGroupsRO.pm
 t/lib/AccessorGroupsWO.pm
+t/lib/BaseInheritedGroups.pm
+t/lib/NotHashBased.pm
+t/lib/SuperInheritedGroups.pm
 t/pod-coverage.t
 t/pod.t
