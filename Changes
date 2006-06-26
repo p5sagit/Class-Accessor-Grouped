@@ -2,6 +2,7 @@ Revision history for Class::Accessor::Grouped.
 
 0.02  2006-06-26 19:23:13
     - Added return statement to end of get_inherited
+    - Fixed pod NAME
 
 0.01  2006-06-26 17:38:23
     - initial release

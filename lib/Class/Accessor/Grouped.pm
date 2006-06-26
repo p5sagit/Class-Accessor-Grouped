@@ -10,7 +10,7 @@ $VERSION = '0.02';
 
 =head1 NAME
 
-Class:Accessor::Grouped - Lets you build groups of accessors
+Class::Accessor::Grouped - Lets you build groups of accessors
 
 =head1 SYNOPSIS
 
