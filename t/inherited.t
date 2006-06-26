@@ -1,4 +1,4 @@
-use Test::More tests => 32;
+use Test::More tests => 33;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -75,3 +75,4 @@ BaseInheritedGroups->basefield('base');
 SuperInheritedGroups->basefield(undef);
 is(SuperInheritedGroups->basefield, 'base');
 
+is(BaseInheritedGroups->undefined, undef);
