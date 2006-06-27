@@ -348,6 +348,7 @@ sub set_inherited {
 =head1 AUTHORS
 
 Matt S. Trout <mst@shadowcatsystems.co.uk>
+Christopher H. Laco <claco@chrislaco.com>
 
 =head1 LICENSE
 

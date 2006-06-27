@@ -5,6 +5,10 @@ use Module::Build;
 
 Module::Build->new(
     module_name => 'Class::Accessor::Grouped',
+    dist_author => [
+        'Matt S. Trout <mst@shadowcatsystems.co.uk>',
+        'Christopher H. Laco <claco@chrislaco.com>'
+    ],
     license => 'perl',
     requires => {
         'Carp' => 0,
