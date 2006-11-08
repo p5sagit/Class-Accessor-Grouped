@@ -6,7 +6,7 @@ use Class::ISA;
 use Scalar::Util qw/blessed reftype/;
 use vars qw($VERSION);
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 =head1 NAME
 
@@ -290,20 +290,30 @@ base class, inherited and changed in subclasses, and inherited and changed for o
 
 sub get_inherited {
     my ($self, $get) = @_;
+    my $class;
 
     if (blessed $self) {
-        if (reftype($self) eq 'HASH' && exists $self->{$get}) {
+        my $reftype = reftype $self;
+        $class = ref $self;
+
+        if ($reftype eq 'HASH' && exists $self->{$get}) {
             return $self->{$get};
-        } elsif (reftype($self) ne 'HASH') {
+        } elsif ($reftype ne 'HASH') {
             croak('Cannot get inherited value on an object instance that is not hash-based');
         };
+    } else {
+        $class = $self;
     };
 
     no strict 'refs';
+    return ${$class.'::__cag_'.$get} if defined(${$class.'::__cag_'.$get});
 
-    my @supers = Class::ISA::self_and_super_path(ref $self || $self);
-    foreach (@supers) {
-        return ${$_.'::_'.$get} if defined(${$_.'::_'.$get});
+    if (!@{$class.'::__cag_supers'}) {
+        @{$class.'::__cag_supers'} = $self->get_super_paths;
+    };
+
+    foreach (@{$class.'::__cag_supers'}) {
+        return ${$_.'::__cag_'.$get} if defined(${$_.'::__cag_'.$get});
     };
 
     return;
@@ -339,9 +349,21 @@ sub set_inherited {
     } else {
         no strict 'refs';
 
-        return ${$self.'::_'.$set} = $val;
+        return ${$self.'::__cag_'.$set} = $val;
     };
 }
+
+=head2 get_super_paths
+
+Returns a list of 'parent' or 'super' class names that the current class inherited from.
+
+=cut
+
+sub get_super_paths {
+    my $class = blessed $_[0] || $_[0];
+
+    return Class::ISA::super_path($class);
+};
 
 1;
 

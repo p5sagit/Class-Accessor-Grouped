@@ -1,5 +1,10 @@
 Revision history for Class::Accessor::Grouped.
 
+0.03  2006-11-07 21:33::35
+    - big speedup for get_inherited
+    - get_inherited now checks the current class first before calculating super_path
+    - get_inherited now caches super_path results
+
 0.02  2006-06-26 19:23:13
     - Added return statement to end of get_inherited
     - Fixed pod NAME
