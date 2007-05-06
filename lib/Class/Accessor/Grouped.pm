@@ -6,7 +6,7 @@ use Class::ISA;
 use Scalar::Util qw/blessed reftype/;
 use vars qw($VERSION);
 
-$VERSION = '0.03';
+$VERSION = '0.04000';
 
 =head1 NAME
 

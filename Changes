@@ -1,8 +1,14 @@
 Revision history for Class::Accessor::Grouped.
 
+0 04000 Sat May 05 21:17:23 2007
+    - Converted to Module::Install
+    - Added culterific tests/TEST_AUTHOR
+    - Converted to distro friendly version number
+
 0.03  2006-11-07 21:33::35
     - big speedup for get_inherited
-    - get_inherited now checks the current class first before calculating super_path
+    - get_inherited now checks the current class first before calculating
+        super_path
     - get_inherited now caches super_path results
 
 0.02  2006-06-26 19:23:13
@@ -11,3 +17,4 @@ Revision history for Class::Accessor::Grouped.
 
 0.01  2006-06-26 17:38:23
     - initial release
+

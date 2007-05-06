@@ -19,6 +19,7 @@ aegis.log$
 # Avoid Module::Build generated and utility files.
 \bBuild$
 \b_build
+Build.PL
 Build.bat
 
 # Avoid temp and backup files.
