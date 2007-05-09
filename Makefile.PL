@@ -11,6 +11,7 @@ all_from 'lib/Class/Accessor/Grouped.pm';
 requires 'Carp';
 requires 'Scalar::Util';
 requires 'Class::ISA';
+requires 'Class::Inspector';
 
 tests "t/*.t t/*/*.t";
 clean_files "Class-Accessor-Grouped-* t/var";

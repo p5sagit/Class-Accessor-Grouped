@@ -94,6 +94,32 @@ METHODS
     Note:: This method will die if you try to set an object variable on a
     non hash-based object.
 
+  get_component_class
+    Arguments: $field
+        Returns: $value
+
+    Gets the value of the specified component class.
+
+        __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
+    
+        $self->result_class->method();
+    
+        ## same as
+        $self->get_component_class('result_class')->method();
+
+  set_component_class
+    Arguments: $field, $class
+        Returns: $new_value
+
+    Inherited accessor that automatically loads the specified class before
+    setting it. This method will die if the specified class could not be
+    loaded.
+
+        __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
+        __PACKAGE__->result_class('MyClass');
+    
+        $self->result_class->method();
+
   get_super_paths
     Returns a list of 'parent' or 'super' class names that the current class
     inherited from.

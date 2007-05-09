@@ -2,11 +2,13 @@ package Class::Accessor::Grouped;
 use strict;
 use warnings;
 use Carp;
-use Class::ISA;
-use Scalar::Util qw/blessed reftype/;
+use Class::Inspector ();
+use Class::ISA ();
+use Scalar::Util ();
+
 use vars qw($VERSION);
 
-$VERSION = '0.04000';
+$VERSION = '0.05000';
 
 =head1 NAME
 
@@ -56,7 +58,7 @@ sub mk_group_accessors {
 
     sub _mk_group_accessors {
         my($self, $maker, $group, @fields) = @_;
-        my $class = ref $self || $self;
+        my $class = Scalar::Util::blessed($self) || $self;
 
         # So we don't have to do lots of lookups inside the loop.
         $maker = $self->can($maker) unless ref $maker;
@@ -73,8 +75,6 @@ sub mk_group_accessors {
 
             my $accessor = $self->$maker($group, $field);
             my $alias = "_${name}_accessor";
-
-            #warn "$class $group $field $alias";
 
             *{$class."\:\:$name"}  = $accessor;
               #unless defined &{$class."\:\:$field"}
@@ -282,9 +282,11 @@ Returns: $value
 
 =back
 
-Simple getter for Classes and hash-based objects which returns the value for the field name passed as
-an argument. This behaves much like L<Class::Data::Accessor> where the field can be set in a
-base class, inherited and changed in subclasses, and inherited and changed for object instances.
+Simple getter for Classes and hash-based objects which returns the value for
+the field name passed as an argument. This behaves much like
+L<Class::Data::Accessor> where the field can be set in a base class,
+inherited and changed in subclasses, and inherited and changed for object
+instances.
 
 =cut
 
@@ -292,8 +294,8 @@ sub get_inherited {
     my ($self, $get) = @_;
     my $class;
 
-    if (blessed $self) {
-        my $reftype = reftype $self;
+    if (Scalar::Util::blessed($self)) {
+        my $reftype = Scalar::Util::reftype($self);
         $class = ref $self;
 
         if ($reftype eq 'HASH' && exists $self->{$get}) {
@@ -329,19 +331,21 @@ Returns: $new_value
 
 =back
 
-Simple setter for Classes and hash-based objects which sets and then returns the value
-for the field name passed as an argument. When called on a hash-based object it will set the appropriate
-hash key value. When called on a class, it will set a class level variable.
+Simple setter for Classes and hash-based objects which sets and then returns
+the value for the field name passed as an argument. When called on a hash-based
+object it will set the appropriate hash key value. When called on a class, it
+will set a class level variable.
 
-B<Note:>: This method will die if you try to set an object variable on a non hash-based object.
+B<Note:>: This method will die if you try to set an object variable on a non
+hash-based object.
 
 =cut
 
 sub set_inherited {
     my ($self, $set, $val) = @_;
 
-    if (blessed $self) {
-        if (reftype($self) eq 'HASH') {
+    if (Scalar::Util::blessed($self)) {
+        if (Scalar::Util::reftype($self) eq 'HASH') {
             return $self->{$set} = $val;
         } else {
             croak('Cannot set inherited value on an object instance that is not hash-based');
@@ -353,6 +357,67 @@ sub set_inherited {
     };
 }
 
+=head2 get_component_class
+
+=over 4
+
+=item Arguments: $field
+
+Returns: $value
+
+=back
+
+Gets the value of the specified component class.
+
+    __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
+    
+    $self->result_class->method();
+    
+    ## same as
+    $self->get_component_class('result_class')->method();
+
+=cut
+
+sub get_component_class {
+    my ($self, $field) = @_;
+
+    return $self->get_inherited($field);
+};
+
+=head2 set_component_class
+
+=over 4
+
+=item Arguments: $field, $class
+
+Returns: $new_value
+
+=back
+
+Inherited accessor that automatically loads the specified class before setting
+it. This method will die if the specified class could not be loaded.
+
+    __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
+    __PACKAGE__->result_class('MyClass');
+    
+    $self->result_class->method();
+
+=cut
+
+sub set_component_class {
+    my ($self, $field, $value) = @_;
+
+    if ($value) {
+        if (!Class::Inspector->loaded($value)) {
+            eval "use $value";
+
+            croak("Could not load $field '$value': ", $@) if $@;
+        };
+    };
+
+    return $self->set_inherited($field, $value);
+};
+
 =head2 get_super_paths
 
 Returns a list of 'parent' or 'super' class names that the current class inherited from.
@@ -360,7 +425,7 @@ Returns a list of 'parent' or 'super' class names that the current class inherit
 =cut
 
 sub get_super_paths {
-    my $class = blessed $_[0] || $_[0];
+    my $class = Scalar::Util::blessed $_[0] || $_[0];
 
     return Class::ISA::super_path($class);
 };
