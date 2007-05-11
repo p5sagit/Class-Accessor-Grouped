@@ -20,7 +20,7 @@ BEGIN {
 ## finally run under -T. Until then, I'm on my own here. ;-)
 my @files;
 my %trusted = (
-
+    'NotReallyAClass.pm' => 1
 );
 
 find({  wanted => \&wanted,

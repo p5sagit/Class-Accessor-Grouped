@@ -4,11 +4,11 @@ use warnings;
 use Carp;
 use Class::Inspector ();
 use Class::ISA ();
-use Scalar::Util ();
+use Scalar::Util qw/reftype blessed/;
 
 use vars qw($VERSION);
 
-$VERSION = '0.05000';
+$VERSION = '0.05001';
 
 =head1 NAME
 
@@ -58,7 +58,7 @@ sub mk_group_accessors {
 
     sub _mk_group_accessors {
         my($self, $maker, $group, @fields) = @_;
-        my $class = Scalar::Util::blessed($self) || $self;
+        my $class = blessed $self || $self;
 
         # So we don't have to do lots of lookups inside the loop.
         $maker = $self->can($maker) unless ref $maker;
@@ -294,8 +294,8 @@ sub get_inherited {
     my ($self, $get) = @_;
     my $class;
 
-    if (Scalar::Util::blessed($self)) {
-        my $reftype = Scalar::Util::reftype($self);
+    if (blessed $self) {
+        my $reftype = reftype $self;
         $class = ref $self;
 
         if ($reftype eq 'HASH' && exists $self->{$get}) {
@@ -344,8 +344,8 @@ hash-based object.
 sub set_inherited {
     my ($self, $set, $val) = @_;
 
-    if (Scalar::Util::blessed($self)) {
-        if (Scalar::Util::reftype($self) eq 'HASH') {
+    if (blessed $self) {
+        if (reftype $self eq 'HASH') {
             return $self->{$set} = $val;
         } else {
             croak('Cannot set inherited value on an object instance that is not hash-based');
@@ -408,7 +408,7 @@ sub set_component_class {
     my ($self, $field, $value) = @_;
 
     if ($value) {
-        if (!Class::Inspector->loaded($value)) {
+        if (Class::Inspector->installed($value) && !Class::Inspector->loaded($value)) {
             eval "use $value";
 
             croak("Could not load $field '$value': ", $@) if $@;
@@ -425,7 +425,7 @@ Returns a list of 'parent' or 'super' class names that the current class inherit
 =cut
 
 sub get_super_paths {
-    my $class = Scalar::Util::blessed $_[0] || $_[0];
+    my $class = blessed $_[0] || $_[0];
 
     return Class::ISA::super_path($class);
 };

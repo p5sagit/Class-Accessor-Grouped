@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Grouped.
 
+0.05001 Thur May 10 20:55:11 2007
+    - set_component_class now only dies if the specified class is a
+        installed/installable class and fails to load it.
+
 0.05000 Tue May 08 19:42:33 2007
     - Added get/set_component_class
 
