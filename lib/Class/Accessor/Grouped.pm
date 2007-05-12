@@ -8,7 +8,7 @@ use Scalar::Util qw/reftype blessed/;
 
 use vars qw($VERSION);
 
-$VERSION = '0.05001';
+$VERSION = '0.05002';
 
 =head1 NAME
 
@@ -408,6 +408,7 @@ sub set_component_class {
     my ($self, $field, $value) = @_;
 
     if ($value) {
+        local $^W = 0;
         if (Class::Inspector->installed($value) && !Class::Inspector->loaded($value)) {
             eval "use $value";
 
