@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+0.06000 Fri May 11 22:00:26 2007
+    - get_super_paths now uses mro::get_linear_isa to DTRT under C3
+
 0.05002 Fri May 11 20:46:16 2007
     - killed Class::Inspector->installed warnings
 

@@ -3,12 +3,12 @@ use strict;
 use warnings;
 use Carp;
 use Class::Inspector ();
-use Class::ISA ();
 use Scalar::Util qw/reftype blessed/;
+use MRO::Compat;
 
 use vars qw($VERSION);
 
-$VERSION = '0.05002';
+$VERSION = '0.06000';
 
 =head1 NAME
 
@@ -428,7 +428,7 @@ Returns a list of 'parent' or 'super' class names that the current class inherit
 sub get_super_paths {
     my $class = blessed $_[0] || $_[0];
 
-    return Class::ISA::super_path($class);
+    return @{mro::get_linear_isa($class)};
 };
 
 1;
