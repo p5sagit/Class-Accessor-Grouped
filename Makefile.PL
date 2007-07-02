@@ -16,9 +16,10 @@ requires 'Class::Inspector';
 tests "t/*.t t/*/*.t";
 clean_files "Class-Accessor-Grouped-* t/var";
 
-eval {
-    system 'pod2text lib/Class/Accessor/Grouped.pm > README';
-};
-
 auto_install;
-WriteAll;
+
+WriteMakefile(
+  dist => {
+    PREOP => 'pod2text lib/Class/Accessor/Grouped.pm > README'
+  }
+);
