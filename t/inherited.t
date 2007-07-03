@@ -1,4 +1,4 @@
-use Test::More tests => 33;
+use Test::More tests => 35;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -7,6 +7,11 @@ use NotHashBased;
 
 my $super = SuperInheritedGroups->new;
 my $base = BaseInheritedGroups->new;
+
+my @ret = SuperInheritedGroups->basefield;
+
+ok(@ret == 1, 'Return value before set');
+ok(!defined(SuperInheritedGroups->basefield), 'Undef return before set');
 
 # set base. base, super, object = base
 is(BaseInheritedGroups->basefield('All Your Base'), 'All Your Base');

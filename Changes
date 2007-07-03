@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Altered get_inherited to return undef rather than () when no value
+      set for Class::Data::(Inheritable|Accessor) compatiblity
+
 0.06001
     - Fixed spelling test error
     - Added WriteAll/DIST/PREOP for README

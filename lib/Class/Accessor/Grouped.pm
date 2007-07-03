@@ -318,7 +318,7 @@ sub get_inherited {
         return ${$_.'::__cag_'.$get} if defined(${$_.'::__cag_'.$get});
     };
 
-    return;
+    return undef;
 }
 
 =head2 set_inherited
