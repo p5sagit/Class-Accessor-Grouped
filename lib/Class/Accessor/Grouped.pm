@@ -8,7 +8,7 @@ use MRO::Compat;
 
 use vars qw($VERSION);
 
-$VERSION = '0.06000';
+$VERSION = '0.07000';
 
 =head1 NAME
 
