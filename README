@@ -17,6 +17,10 @@ METHODS
     they will call get_$group($field) on get and set_$group($field, $value)
     on set.
 
+    If you want to mimic Class::Accessor's mk_accessors $group has to be
+    'simple' to tell Class::Accessor::Grouped to use its own get_simple and
+    set_simple methods.
+
     @fieldspec is a list of field/accessor names; if a fieldspec is a scalar
     this is used as both field and accessor name, if a listref it is
     expected to be of the form [ $accessor, $field ].

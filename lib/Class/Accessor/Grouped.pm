@@ -1,14 +1,12 @@
 package Class::Accessor::Grouped;
 use strict;
 use warnings;
-use Carp;
+use Carp ();
 use Class::Inspector ();
-use Scalar::Util qw/reftype blessed/;
+use Scalar::Util ();
 use MRO::Compat;
 
-use vars qw($VERSION);
-
-$VERSION = '0.07000';
+our $VERSION = '0.07999_01';
 
 =head1 NAME
 
@@ -62,14 +60,14 @@ sub mk_group_accessors {
 
     sub _mk_group_accessors {
         my($self, $maker, $group, @fields) = @_;
-        my $class = blessed $self || $self;
+        my $class = Scalar::Util::blessed $self || $self;
 
         # So we don't have to do lots of lookups inside the loop.
         $maker = $self->can($maker) unless ref $maker;
 
         foreach my $field (@fields) {
             if( $field eq 'DESTROY' ) {
-                carp("Having a data accessor named DESTROY  in ".
+                Carp::carp("Having a data accessor named DESTROY  in ".
                              "'$class' is unwise.");
             }
 
@@ -154,17 +152,15 @@ sub make_group_accessor {
     my $set = "set_$group";
     my $get = "get_$group";
 
-    # Build a closure around $field.
-    return sub {
-        my $self = shift;
-
-        if(@_) {
-            return $self->$set($field, @_);
+    # eval for faster fastiness
+    return eval "sub {
+        if(\@_ > 1) {
+            return shift->$set('$field', \@_);
         }
         else {
-            return $self->$get($field);
+            return shift->$get('$field');
         }
-    };
+    };"
 }
 
 =head2 make_group_ro_accessor
@@ -187,18 +183,16 @@ sub make_group_ro_accessor {
 
     my $get = "get_$group";
 
-    return sub {
-        my $self = shift;
-
-        if(@_) {
-            my $caller = caller;
-            croak("'$caller' cannot alter the value of '$field' on ".
-                        "objects of class '$class'");
+    return eval "sub {
+        if(\@_ > 1) {
+            my \$caller = caller;
+            Carp::croak(\"'\$caller' cannot alter the value of '$field' on \".
+                        \"objects of class '$class'\");
         }
         else {
-            return $self->$get($field);
+            return shift->$get('$field');
         }
-    };
+    };"
 }
 
 =head2 make_group_wo_accessor
@@ -221,18 +215,16 @@ sub make_group_wo_accessor {
 
     my $set = "set_$group";
 
-    return sub {
-        my $self = shift;
-
-        unless (@_) {
-            my $caller = caller;
-            croak("'$caller' cannot access the value of '$field' on ".
-                        "objects of class '$class'");
+    return eval "sub {
+        unless (\@_ > 1) {
+            my \$caller = caller;
+            Carp::croak(\"'\$caller' cannot access the value of '$field' on \".
+                        \"objects of class '$class'\");
         }
         else {
-            return $self->$set($field, @_);
+            return shift->$set('$field', \@_);
         }
-    };
+    };"
 }
 
 =head2 get_simple
@@ -251,8 +243,9 @@ name passed as an argument.
 =cut
 
 sub get_simple {
-  my ($self, $get) = @_;
+    my ($self, $get) = @_;
   return $self->{$get};
+  return $_[0]->{$_[1]};
 }
 
 =head2 set_simple
@@ -271,8 +264,7 @@ for the field name passed as an argument.
 =cut
 
 sub set_simple {
-  my ($self, $set, $val) = @_;
-  return $self->{$set} = $val;
+  return $_[0]->{$_[1]} = $_[2];
 }
 
 
@@ -295,31 +287,30 @@ instances.
 =cut
 
 sub get_inherited {
-    my ($self, $get) = @_;
     my $class;
 
-    if (blessed $self) {
-        my $reftype = reftype $self;
-        $class = ref $self;
+    if (Scalar::Util::blessed $_[0]) {
+        my $reftype = Scalar::Util::reftype $_[0];
+        $class = ref $_[0];
 
-        if ($reftype eq 'HASH' && exists $self->{$get}) {
-            return $self->{$get};
+        if ($reftype eq 'HASH' && exists $_[0]->{$_[1]}) {
+            return $_[0]->{$_[1]};
         } elsif ($reftype ne 'HASH') {
-            croak('Cannot get inherited value on an object instance that is not hash-based');
+            Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
         };
     } else {
-        $class = $self;
+        $class = $_[0];
     };
 
     no strict 'refs';
-    return ${$class.'::__cag_'.$get} if defined(${$class.'::__cag_'.$get});
+    return ${$class.'::__cag_'.$_[1]} if defined(${$class.'::__cag_'.$_[1]});
 
     if (!@{$class.'::__cag_supers'}) {
-        @{$class.'::__cag_supers'} = $self->get_super_paths;
+        @{$class.'::__cag_supers'} = $_[0]->get_super_paths;
     };
 
     foreach (@{$class.'::__cag_supers'}) {
-        return ${$_.'::__cag_'.$get} if defined(${$_.'::__cag_'.$get});
+        return ${$_.'::__cag_'.$_[1]} if defined(${$_.'::__cag_'.$_[1]});
     };
 
     return undef;
@@ -346,18 +337,16 @@ hash-based object.
 =cut
 
 sub set_inherited {
-    my ($self, $set, $val) = @_;
-
-    if (blessed $self) {
-        if (reftype $self eq 'HASH') {
-            return $self->{$set} = $val;
+    if (Scalar::Util::blessed $_[0]) {
+        if (Scalar::Util::reftype $_[0] eq 'HASH') {
+            return $_[0]->{$_[1]} = $_[2];
         } else {
-            croak('Cannot set inherited value on an object instance that is not hash-based');
+            Carp::croak('Cannot set inherited value on an object instance that is not hash-based');
         };
     } else {
         no strict 'refs';
 
-        return ${$self.'::__cag_'.$set} = $val;
+        return ${$_[0].'::__cag_'.$_[1]} = $_[2];
     };
 }
 
@@ -383,9 +372,7 @@ Gets the value of the specified component class.
 =cut
 
 sub get_component_class {
-    my ($self, $field) = @_;
-
-    return $self->get_inherited($field);
+    return $_[0]->get_inherited($_[1]);
 };
 
 =head2 set_component_class
@@ -409,18 +396,16 @@ it. This method will die if the specified class could not be loaded.
 =cut
 
 sub set_component_class {
-    my ($self, $field, $value) = @_;
-
-    if ($value) {
+    if ($_[2]) {
         local $^W = 0;
-        if (Class::Inspector->installed($value) && !Class::Inspector->loaded($value)) {
-            eval "use $value";
+        if (Class::Inspector->installed($_[2]) && !Class::Inspector->loaded($_[2])) {
+            eval "use $_[2]";
 
-            croak("Could not load $field '$value': ", $@) if $@;
+            Carp::croak("Could not load $_[1] '$_[2]': ", $@) if $@;
         };
     };
 
-    return $self->set_inherited($field, $value);
+    return $_[0]->set_inherited($_[1], $_[2]);
 };
 
 =head2 get_super_paths
@@ -430,7 +415,7 @@ Returns a list of 'parent' or 'super' class names that the current class inherit
 =cut
 
 sub get_super_paths {
-    my $class = blessed $_[0] || $_[0];
+    my $class = Scalar::Util::blessed $_[0] || $_[0];
 
     return @{mro::get_linear_isa($class)};
 };

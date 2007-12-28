@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Grouped.
 
+0.07009_01 Fri Dec 28 18:08::00 2007
+    - Tweak code for pure speed while fixing performance issue when assigning @_
+    under Perl 5.10.0
+
 0.07000 
     - Altered get_inherited to return undef rather than () when no value
         set for Class::Data::(Inheritable|Accessor) compatiblity
