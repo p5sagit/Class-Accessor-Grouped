@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+0.08000 Tue Jan 08 18:22:47 2008
+    - Bumped version for release. No changes oherwise.
+
 0.07009_01 Fri Dec 28 18:08::00 2007
     - Tweak code for pure speed while fixing performance issue when assigning @_
     under Perl 5.10.0
