@@ -13,7 +13,6 @@ requires 'Scalar::Util';
 requires 'MRO::Compat';
 requires 'Class::Inspector';
 
-tests "t/*.t t/*/*.t";
 clean_files "Class-Accessor-Grouped-* t/var";
 
 auto_install;

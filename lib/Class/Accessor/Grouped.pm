@@ -6,7 +6,7 @@ use Class::Inspector ();
 use Scalar::Util ();
 use MRO::Compat;
 
-our $VERSION = '0.08000';
+our $VERSION = '0.08001';
 
 =head1 NAME
 

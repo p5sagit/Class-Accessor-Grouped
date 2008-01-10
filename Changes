@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+0.08001 Wed Jan 09 19:35:34 2008
+    - Fixed Makefile.PL tests setting that was killing older installs
+
 0.08000 Tue Jan 08 18:22:47 2008
     - Bumped version for release. No changes oherwise.
 
