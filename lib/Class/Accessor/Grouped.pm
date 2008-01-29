@@ -363,9 +363,9 @@ Returns: $value
 Gets the value of the specified component class.
 
     __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
-    
+
     $self->result_class->method();
-    
+
     ## same as
     $self->get_component_class('result_class')->method();
 
@@ -390,7 +390,7 @@ it. This method will die if the specified class could not be loaded.
 
     __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
     __PACKAGE__->result_class('MyClass');
-    
+
     $self->result_class->method();
 
 =cut
