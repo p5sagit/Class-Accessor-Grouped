@@ -6,7 +6,7 @@ use Class::Inspector ();
 use Scalar::Util ();
 use MRO::Compat;
 
-our $VERSION = '0.08001';
+our $VERSION = '0.08002';
 
 =head1 NAME
 
@@ -243,8 +243,6 @@ name passed as an argument.
 =cut
 
 sub get_simple {
-    my ($self, $get) = @_;
-  return $self->{$get};
   return $_[0]->{$_[1]};
 }
 

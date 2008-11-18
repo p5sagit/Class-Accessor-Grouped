@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+0.08002 Mon Nov 17 20:27:22 2008
+    - Removed unnecessary code in get_simple: RT#40992, BUCHMULLER Norbert
+
 0.08001 Wed Jan 09 19:35:34 2008
     - Fixed Makefile.PL tests setting that was killing older installs
 
