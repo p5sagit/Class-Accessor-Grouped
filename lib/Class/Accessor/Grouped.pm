@@ -301,11 +301,12 @@ sub get_inherited {
     };
 
     no strict 'refs';
+    no warnings qw/uninitialized/;
     return ${$class.'::__cag_'.$_[1]} if defined(${$class.'::__cag_'.$_[1]});
 
     # we need to be smarter about recalculation, as @ISA (thus supers) can very well change in-flight
     my $pkg_gen = mro::get_pkg_gen ($class);
-    if (!@{$class.'::__cag_supers'} or ${$class.'::__cag_pkg_gen'} != $pkg_gen ) {
+    if ( ${$class.'::__cag_pkg_gen'} != $pkg_gen ) {
         @{$class.'::__cag_supers'} = $_[0]->get_super_paths;
         ${$class.'::__cag_pkg_gen'} = $pkg_gen;
     };
