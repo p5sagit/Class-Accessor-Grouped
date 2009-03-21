@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+0.08003 Sat Mar 21 9:27:24 2009
+    - Fixed set_inherited under C3::Componentised: RT#43702, RIBASUSHI
+
 0.08002 Mon Nov 17 20:27:22 2008
     - Removed unnecessary code in get_simple: RT#40992, BUCHMULLER Norbert
 
