@@ -7,7 +7,7 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.08003';
+our $VERSION = '0.08004';
 
 =head1 NAME
 
