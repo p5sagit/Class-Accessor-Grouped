@@ -433,6 +433,10 @@ sub get_super_paths {
 Matt S. Trout <mst@shadowcatsystems.co.uk>
 Christopher H. Laco <claco@chrislaco.com>
 
+With contributions from:
+
+Guillermo Roditi <groditi@cpan.org>
+
 =head1 LICENSE
 
 You may distribute this code under the same terms as Perl itself.
