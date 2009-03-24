@@ -12,6 +12,9 @@ requires 'Carp';
 requires 'Scalar::Util';
 requires 'MRO::Compat';
 requires 'Class::Inspector';
+requires 'Sub::Name' => '0.04';
+
+test_requires 'Sub::Identify';
 
 clean_files "Class-Accessor-Grouped-* t/var";
 

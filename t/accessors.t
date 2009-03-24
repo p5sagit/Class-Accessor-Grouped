@@ -1,8 +1,9 @@
-use Test::More tests => 58;
+use Test::More tests => 62;
 use strict;
 use warnings;
 use lib 't/lib';
 use AccessorGroups;
+use Sub::Identify qw/sub_name sub_fullname/;;
 
 my $class = AccessorGroups->new;
 
@@ -23,6 +24,18 @@ my $class = AccessorGroups->new;
     no warnings;
     *AccessorGroups::DESTROY = sub {};
 };
+
+{
+  my $class_name = ref $class;
+  my $name = 'multiple1';
+  my $alias = "_${name}_accessor";
+  my $accessor = $class->can($name);
+  my $alias_accessor = $class->can($alias);
+  isnt(sub_name($accessor), '__ANON__', 'accessor is named');
+  isnt(sub_name($alias_accessor), '__ANON__', 'alias is named');
+  is(sub_fullname($accessor), join('::',$class_name,$name), 'accessor FQ name');
+  is(sub_fullname($alias_accessor), join('::',$class_name,$alias), 'alias FQ name');
+}
 
 foreach (qw/singlefield multiple1 multiple2/) {
     my $name = $_;

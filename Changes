@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+0.08004 
+    - Make _mk_group_accessors name the closures installed for Moose compat
+
 0.08003 Sat Mar 21 9:27:24 2009
     - Fixed set_inherited under C3::Componentised: RT#43702, RIBASUSHI
 

@@ -5,6 +5,7 @@ use Carp ();
 use Class::Inspector ();
 use Scalar::Util ();
 use MRO::Compat;
+use Sub::Name ();
 
 our $VERSION = '0.08003';
 
@@ -76,12 +77,15 @@ sub mk_group_accessors {
             ($name, $field) = @$field if ref $field;
 
             my $accessor = $self->$maker($group, $field);
+            my $alias_accessor = $self->$maker($group, $field);
+
             my $alias = "_${name}_accessor";
+            my $full_name = join('::', $class, $name);
+            my $full_alias = join('::', $class, $alias);
 
-            *{$class."\:\:$name"}  = $accessor;
+            *$full_name = Sub::Name::subname($full_name, $accessor);
               #unless defined &{$class."\:\:$field"}
-
-            *{$class."\:\:$alias"}  = $accessor;
+            *$full_alias = Sub::Name::subname($full_alias, $alias_accessor);
               #unless defined &{$class."\:\:$alias"}
         }
     }
