@@ -7,7 +7,23 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.08004';
+our $VERSION = '0.08999_01';
+
+BEGIN {
+    our $hasXS;
+
+    sub _hasXS {
+        return $hasXS if defined $hasXS;
+    
+        $hasXS = 0;
+        eval {
+            require Class::XSAccessor;
+            $hasXS = 1;
+        };
+    
+        return $hasXS;
+    }
+}
 
 =head1 NAME
 
@@ -65,6 +81,8 @@ sub mk_group_accessors {
 
         # So we don't have to do lots of lookups inside the loop.
         $maker = $self->can($maker) unless ref $maker;
+        
+        my $hasXS = _hasXS();
 
         foreach my $field (@fields) {
             if( $field eq 'DESTROY' ) {
@@ -75,18 +93,27 @@ sub mk_group_accessors {
             my $name = $field;
 
             ($name, $field) = @$field if ref $field;
-
-            my $accessor = $self->$maker($group, $field);
-            my $alias_accessor = $self->$maker($group, $field);
-
+            
             my $alias = "_${name}_accessor";
             my $full_name = join('::', $class, $name);
             my $full_alias = join('::', $class, $alias);
-
-            *$full_name = Sub::Name::subname($full_name, $accessor);
-              #unless defined &{$class."\:\:$field"}
-            *$full_alias = Sub::Name::subname($full_alias, $alias_accessor);
-              #unless defined &{$class."\:\:$alias"}
+            
+            if ( $hasXS && $group eq 'simple' ) {
+                Class::XSAccessor::newxs_accessor("${class}::${name}", $field, 0);
+                Class::XSAccessor::newxs_accessor("${class}::${alias}", $field, 0);
+                
+                # XXX: is the alias accessor really necessary?
+            }
+            else {
+                my $accessor = $self->$maker($group, $field);
+                my $alias_accessor = $self->$maker($group, $field);
+                
+                *$full_name = Sub::Name::subname($full_name, $accessor);
+                  #unless defined &{$class."\:\:$field"}
+                
+                *$full_alias = Sub::Name::subname($full_alias, $alias_accessor);
+                  #unless defined &{$class."\:\:$alias"}
+            }
         }
     }
 }

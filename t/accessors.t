@@ -2,8 +2,14 @@ use Test::More tests => 62;
 use strict;
 use warnings;
 use lib 't/lib';
-use AccessorGroups;
 use Sub::Identify qw/sub_name sub_fullname/;;
+
+BEGIN {
+    # Disable XSAccessor to test pure-Perl accessors
+    $Class::Accessor::Grouped::hasXS = 0;
+    
+    require AccessorGroups;
+}
 
 my $class = AccessorGroups->new;
 
@@ -90,3 +96,6 @@ foreach (qw/lr1 lr2/) {
     # alias gets same as name
     is($class->$name, 'd');
 };
+
+1;
+

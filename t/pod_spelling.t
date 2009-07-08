@@ -22,6 +22,7 @@ all_pod_files_spelling_ok();
 __DATA__
 Bowden
 Raygun
+Roditi
 isa
 mst
 behaviour
