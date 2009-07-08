@@ -2,7 +2,7 @@ Revision history for Class::Accessor::Grouped.
 
 0.08999_01 Tue July 7 22:06:21 2009
     - Make _mk_group_accessors name the closures installed for Moose compat
-    - Use Class::XSAccessor if available RT#45577, AGRUNDMA
+    - Use Class::XSAccessor if available RT#45577 (Andy Grundman)
 
 0.08003 Sat Mar 21 9:27:24 2009
     - Fixed set_inherited under C3::Componentised: RT#43702, RIBASUSHI
