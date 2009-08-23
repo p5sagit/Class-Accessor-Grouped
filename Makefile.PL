@@ -1,7 +1,7 @@
 # $Id$
 use strict;
 use warnings;
-use inc::Module::Install 0.65;
+use inc::Module::Install 0.91;
 
 name 'Class-Accessor-Grouped';
 license 'perl';
