@@ -18,15 +18,18 @@ feature 'XS Accessor Support',
   -default => 0,
   'Class::XSAccessor' => 0;
 
-
 test_requires 'Sub::Identify';
 
 clean_files "Class-Accessor-Grouped-* t/var";
 
+if (-e 'MANIFEST.SKIP') {
+    system('pod2text lib/Class/Accessor/Grouped.pm > README');
+}
+
+auto_provides;
 auto_install;
 
-WriteMakefile(
-  dist => {
-    PREOP => 'pod2text lib/Class/Accessor/Grouped.pm > README'
-  }
-);
+resources repository =>
+'http://dev.catalyst.perl.org/repos/bast/trunk/Class-Accessor-Grouped/';
+
+WriteAll;
