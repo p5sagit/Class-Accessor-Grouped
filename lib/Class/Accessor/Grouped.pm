@@ -464,9 +464,11 @@ With contributions from:
 
 Guillermo Roditi <groditi@cpan.org>
 
-=head1 LICENSE
+=head1 COPYRIGHT & LICENSE
 
-You may distribute this code under the same terms as Perl itself.
+Copyright (c) 2006-2009 Matt S. Trout <mst@shadowcatsystems.co.uk>
+
+This program is free software; you can redistribute it and/or modify
+it under the same terms as perl itself.
 
 =cut
-
