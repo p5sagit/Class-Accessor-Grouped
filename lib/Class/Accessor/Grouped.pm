@@ -129,7 +129,7 @@ Returns: none
 =back
 
 Creates a set of read only accessors in a given group. Identical to
-<L:/mk_group_accessors> but accessors will throw an error if passed a value
+L</mk_group_accessors> but accessors will throw an error if passed a value
 rather than setting the value.
 
 =cut
@@ -151,7 +151,7 @@ Returns: none
 =back
 
 Creates a set of write only accessors in a given group. Identical to
-<L:/mk_group_accessors> but accessors will throw an error if not passed a
+L</mk_group_accessors> but accessors will throw an error if not passed a
 value rather than getting the value.
 
 =cut
