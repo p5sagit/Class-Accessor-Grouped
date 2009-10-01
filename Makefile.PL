@@ -13,10 +13,7 @@ requires 'Scalar::Util';
 requires 'MRO::Compat';
 requires 'Class::Inspector';
 requires 'Sub::Name' => '0.04';
-
-feature 'XS Accessor Support',
-  -default => 0,
-  'Class::XSAccessor' => 0;
+requires 'Class::XSAccessor';
 
 test_requires 'Sub::Identify';
 
