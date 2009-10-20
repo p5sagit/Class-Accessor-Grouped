@@ -13,7 +13,9 @@ requires 'Scalar::Util';
 requires 'MRO::Compat';
 requires 'Class::Inspector';
 requires 'Sub::Name' => '0.04';
-requires 'Class::XSAccessor';
+
+# removed due to segfaults, see _hasXS()
+#requires 'Class::XSAccessor';
 
 test_requires 'Sub::Identify';
 

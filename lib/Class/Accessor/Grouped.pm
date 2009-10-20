@@ -7,7 +7,7 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09001';
+our $VERSION = '0.09002';
 $VERSION = eval $VERSION;
 
 =head1 NAME
@@ -440,20 +440,24 @@ sub get_super_paths {
 
 # This is now a hard, rather than optional dep. Since we dep on Sub::Name, we no
 # longer care about not using XS modules.
+
+# Class::XSAccessor is segfaulting in some places, so removing for now.
 {
     our $hasXS;
 
-    sub _hasXS {
-        return $hasXS if defined $hasXS;
-    
-        $hasXS = 0;
-        eval {
-            require Class::XSAccessor;
-            $hasXS = 1;
-        };
-    
-        return $hasXS;
-    }
+    sub _hasXS { 0 }
+
+#    sub _hasXS {
+#        return $hasXS if defined $hasXS;
+#    
+#        $hasXS = 0;
+#        eval {
+#            require Class::XSAccessor;
+#            $hasXS = 1;
+#        };
+#    
+#        return $hasXS;
+#    }
 }
 
 1;

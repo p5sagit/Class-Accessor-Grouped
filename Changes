@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+0.09002 Tue Oct 20 23:16:28 2009
+    - removing Class::XSAccessor usage for now
+
 0.09001 Thu Oct  1 21:48:06 2009
     - remove optional dep from Makefile.PL
 
