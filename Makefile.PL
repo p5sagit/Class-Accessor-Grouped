@@ -25,6 +25,8 @@ if (-e 'MANIFEST.SKIP') {
     system('pod2text lib/Class/Accessor/Grouped.pm > README');
 }
 
+realclean_files 'README';
+
 auto_provides;
 auto_install;
 

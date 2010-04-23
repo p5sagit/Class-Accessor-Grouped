@@ -7,12 +7,14 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09002';
+our $VERSION = '0.09003';
 $VERSION = eval $VERSION;
 
 # Class::XSAccessor is segfaulting on win32, so be careful
 # Win32 users can set $hasXS to try to use it anyway
+
 our $hasXS;
+
 sub _hasXS {
 
   if (not defined $hasXS) {
@@ -464,7 +466,7 @@ sub get_super_paths {
 
 You can speed up accessors of type 'simple' by installing L<Class::XSAccessor>.
 Note however that the use of this module is disabled by default on Win32
-systems, as it causes yet untracked segfaults. If you are a Win32 user, and
+systems, as it causes yet unresolved segfaults. If you are a Win32 user, and
 want to try this module with L<Class::XSAccessor>, set
 C<$Class::Accessor::Grouped::hasXS> to a true value B<before> registering
 your accessors (e.g. in a C<BEGIN> block)
@@ -480,7 +482,7 @@ Guillermo Roditi <groditi@cpan.org>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright (c) 2006-2009 Matt S. Trout <mst@shadowcatsystems.co.uk>
+Copyright (c) 2006-2010 Matt S. Trout <mst@shadowcatsystems.co.uk>
 
 This program is free software; you can redistribute it and/or modify
 it under the same terms as perl itself.
