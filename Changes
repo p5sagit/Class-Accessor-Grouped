@@ -1,5 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
+    - make the Class::XSAccessor more intelligent, add documentation
+
 0.09002 Tue Oct 20 23:16:28 2009
     - removing Class::XSAccessor usage for now
 
