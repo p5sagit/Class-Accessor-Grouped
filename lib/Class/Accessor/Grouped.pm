@@ -462,7 +462,7 @@ sub get_super_paths {
 
 1;
 
-=head1 Performance
+=head1 PERFORMANCE
 
 You can speed up accessors of type 'simple' by installing L<Class::XSAccessor>.
 Note however that the use of this module is disabled by default on Win32
