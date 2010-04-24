@@ -328,32 +328,33 @@ instances.
 sub get_inherited {
     my $class;
 
-    if (Scalar::Util::blessed $_[0]) {
-        my $reftype = Scalar::Util::reftype $_[0];
-        $class = ref $_[0];
-
-        if ($reftype eq 'HASH' && exists $_[0]->{$_[1]}) {
-            return $_[0]->{$_[1]};
-        } elsif ($reftype ne 'HASH') {
-            Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
-        };
-    } else {
+    if ( ($class = ref $_[0]) && Scalar::Util::blessed $_[0]) {
+        if (Scalar::Util::reftype $_[0] eq 'HASH') {
+          return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
+        }
+        else {
+          Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
+        }
+    }
+    else {
         $class = $_[0];
-    };
+    }
 
     no strict 'refs';
     no warnings qw/uninitialized/;
-    return ${$class.'::__cag_'.$_[1]} if defined(${$class.'::__cag_'.$_[1]});
+
+    my $cag_slot = '::__cag_'. $_[1];
+    return ${$class.$cag_slot} if defined(${$class.$cag_slot});
 
     # we need to be smarter about recalculation, as @ISA (thus supers) can very well change in-flight
-    my $pkg_gen = mro::get_pkg_gen ($class);
-    if ( ${$class.'::__cag_pkg_gen'} != $pkg_gen ) {
-        @{$class.'::__cag_supers'} = $_[0]->get_super_paths;
-        ${$class.'::__cag_pkg_gen'} = $pkg_gen;
-    };
+    my $cur_gen = mro::get_pkg_gen ($class);
+    if ( $cur_gen != ${$class.'::__cag_pkg_gen__'} ) {
+        @{$class.'::__cag_supers__'} = $_[0]->get_super_paths;
+        ${$class.'::__cag_pkg_gen__'} = $cur_gen;
+    }
 
-    foreach (@{$class.'::__cag_supers'}) {
-        return ${$_.'::__cag_'.$_[1]} if defined(${$_.'::__cag_'.$_[1]});
+    for (@{$class.'::__cag_supers__'}) {
+        return ${$_.$cag_slot} if defined(${$_.$cag_slot});
     };
 
     return undef;
@@ -458,9 +459,7 @@ Returns a list of 'parent' or 'super' class names that the current class inherit
 =cut
 
 sub get_super_paths {
-    my $class = Scalar::Util::blessed $_[0] || $_[0];
-
-    return @{mro::get_linear_isa($class)};
+    return @{mro::get_linear_isa( ref($_[0]) || $_[0] )};
 };
 
 1;
