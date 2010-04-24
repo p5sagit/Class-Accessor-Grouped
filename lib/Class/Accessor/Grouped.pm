@@ -103,13 +103,16 @@ sub mk_group_accessors {
             my $alias = "_${name}_accessor";
             my $full_name = join('::', $class, $name);
             my $full_alias = join('::', $class, $alias);
-            
             if ( $hasXS && $group eq 'simple' ) {
                 require Class::XSAccessor;
-                Class::XSAccessor::newxs_accessor("${class}::${name}", $field, 0);
-                Class::XSAccessor::newxs_accessor("${class}::${alias}", $field, 0);
-                
-                # XXX: is the alias accessor really necessary?
+                Class::XSAccessor->import({
+                  replace => 1,
+                  class => $class,
+                  accessors => {
+                    $name => $field,
+                    $alias => $field,
+                  },
+                });
             }
             else {
                 my $accessor = $self->$maker($group, $field);

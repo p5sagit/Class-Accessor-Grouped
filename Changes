@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Changed the way Class::XSAccessor is invoked if available
+      (recommended by C::XSA author)
+
 0.09003 Fri Apr 23 23:00:19 2010
     - use Class::XSAccessor if available for 'simple' accessors, except on
       MSWin32, with documentation
