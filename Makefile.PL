@@ -31,6 +31,6 @@ auto_provides;
 auto_install;
 
 resources repository =>
-'http://dev.catalyst.perl.org/repos/bast/trunk/Class-Accessor-Grouped/';
+'http://dev.catalyst.perl.org/repos/bast/Class-Accessor-Grouped/trunk';
 
 WriteAll;
