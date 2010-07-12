@@ -5,12 +5,7 @@ use File::Spec::Functions;
 use Test::More;
 use lib 't/lib';
 
-BEGIN {
-    # Enable XSAccessor check
-    $Class::Accessor::Grouped::hasXS = undef;
-    
-    require AccessorGroups;
-}
+use AccessorGroups ();
  
 plan skip_all => 'Class::XSAccessor not available'
     unless Class::Accessor::Grouped::_hasXS();

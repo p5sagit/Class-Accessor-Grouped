@@ -10,22 +10,16 @@ use Sub::Name ();
 our $VERSION = '0.09003';
 $VERSION = eval $VERSION;
 
-# Class::XSAccessor is segfaulting on win32, so be careful
-# Win32 users can set $hasXS to try to use it anyway
-
 our $hasXS;
 
 sub _hasXS {
-
   if (not defined $hasXS) {
     $hasXS = 0;
 
-    if ($^O ne 'MSWin32') {
-      eval {
-        require Class::XSAccessor;
-        $hasXS = 1;
-      };
-    }
+    eval {
+      require Class::XSAccessor;
+      $hasXS = 1;
+    };
   }
 
   return $hasXS;
@@ -467,20 +461,16 @@ sub get_super_paths {
 =head1 PERFORMANCE
 
 You can speed up accessors of type 'simple' by installing L<Class::XSAccessor>.
-Note however that the use of this module is disabled by default on Win32
-systems, as it causes yet unresolved segfaults. If you are a Win32 user, and
-want to try this module with L<Class::XSAccessor>, set
-C<$Class::Accessor::Grouped::hasXS> to a true value B<before> registering
-your accessors (e.g. in a C<BEGIN> block)
 
 =head1 AUTHORS
 
 Matt S. Trout <mst@shadowcatsystems.co.uk>
 Christopher H. Laco <claco@chrislaco.com>
 
-With contributions from:
+=head1 CONTRIBUTORS
 
-Guillermo Roditi <groditi@cpan.org>
+groditi: Guillermo Roditi <groditi@cpan.org>
+ribasushi: Peter Rabbitson <ribasushi@cpan.org>
 
 =head1 COPYRIGHT & LICENSE
 

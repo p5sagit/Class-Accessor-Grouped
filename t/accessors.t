@@ -72,7 +72,8 @@ foreach (qw/singlefield multiple1 multiple2/) {
 foreach (qw/lr1 lr2/) {
     my $name = "$_".'name';
     my $alias = "_${name}_accessor";
-    my $field = "$_".'field';
+
+    my $field = { lr1 => 'lr1;field', lr2 => q{lr2'field} }->{$_};
 
     can_ok($class, $name, $alias);
     ok(!$class->can($field));
@@ -98,4 +99,3 @@ foreach (qw/lr1 lr2/) {
 };
 
 1;
-
