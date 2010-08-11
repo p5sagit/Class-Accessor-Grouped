@@ -7,7 +7,7 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09003';
+our $VERSION = '0.09004';
 $VERSION = eval $VERSION;
 
 our $hasXS;

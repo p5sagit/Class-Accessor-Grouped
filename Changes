@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+0.09004 Wed Aug 11 04:23:15 2010
     - Changed the way Class::XSAccessor is invoked if available
       (recommended by C::XSA author)
     - Modified internal cache names to avoid real accessor clashes
