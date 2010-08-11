@@ -187,6 +187,8 @@ sub make_group_accessor {
     my $set = "set_$group";
     my $get = "get_$group";
 
+    $field =~ s/'/\\'/g;
+
     # eval for faster fastiness
     my $code = eval "sub {
         if(\@_ > 1) {
@@ -220,6 +222,8 @@ sub make_group_ro_accessor {
     my($class, $group, $field) = @_;
 
     my $get = "get_$group";
+
+    $field =~ s/'/\\'/g;
 
     my $code = eval "sub {
         if(\@_ > 1) {
@@ -255,6 +259,8 @@ sub make_group_wo_accessor {
     my($class, $group, $field) = @_;
 
     my $set = "set_$group";
+
+    $field =~ s/'/\\'/g;
 
     my $code = eval "sub {
         unless (\@_ > 1) {
@@ -480,6 +486,7 @@ Christopher H. Laco <claco@chrislaco.com>
 
 groditi: Guillermo Roditi <groditi@cpan.org>
 ribasushi: Peter Rabbitson <ribasushi@cpan.org>
+Jason Plum <jason.plum@bmmsi.com>
 
 =head1 COPYRIGHT & LICENSE
 

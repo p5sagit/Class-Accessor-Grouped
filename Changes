@@ -4,6 +4,7 @@ Revision history for Class::Accessor::Grouped.
       (recommended by C::XSA author)
     - Modified internal cache names to avoid real accessor clashes
     - Some micro-optimizations for get_inherited
+    - Fixed field names with a single quote in them (patch from Jason Plum)
 
 0.09003 Fri Apr 23 23:00:19 2010
     - use Class::XSAccessor if available for 'simple' accessors, except on
