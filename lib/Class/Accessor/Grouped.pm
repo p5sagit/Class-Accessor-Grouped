@@ -188,14 +188,17 @@ sub make_group_accessor {
     my $get = "get_$group";
 
     # eval for faster fastiness
-    return eval "sub {
+    my $code = eval "sub {
         if(\@_ > 1) {
             return shift->$set('$field', \@_);
         }
         else {
             return shift->$get('$field');
         }
-    };"
+    };";
+    Carp::croak $@ if $@;
+
+    return $code;
 }
 
 =head2 make_group_ro_accessor
@@ -218,7 +221,7 @@ sub make_group_ro_accessor {
 
     my $get = "get_$group";
 
-    return eval "sub {
+    my $code = eval "sub {
         if(\@_ > 1) {
             my \$caller = caller;
             Carp::croak(\"'\$caller' cannot alter the value of '$field' on \".
@@ -227,7 +230,10 @@ sub make_group_ro_accessor {
         else {
             return shift->$get('$field');
         }
-    };"
+    };";
+    Carp::croak $@ if $@;
+
+    return $code;
 }
 
 =head2 make_group_wo_accessor
@@ -250,7 +256,7 @@ sub make_group_wo_accessor {
 
     my $set = "set_$group";
 
-    return eval "sub {
+    my $code = eval "sub {
         unless (\@_ > 1) {
             my \$caller = caller;
             Carp::croak(\"'\$caller' cannot access the value of '$field' on \".
@@ -259,7 +265,10 @@ sub make_group_wo_accessor {
         else {
             return shift->$set('$field', \@_);
         }
-    };"
+    };";
+    Carp::croak $@ if $@;
+
+    return $code;
 }
 
 =head2 get_simple
