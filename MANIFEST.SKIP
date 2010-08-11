@@ -37,4 +37,4 @@ Build.bat
 \b\.#
 
 # Avoid author test files.
-\bpod-spelling.t$
+\bpod_spelling.t$
