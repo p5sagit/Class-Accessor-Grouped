@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+0.09005 Wed Sep  1 04:00:00 2010
+    - Again, remove Class::XSAccessor for Win32 sine it still breaks
+
 0.09004 Wed Aug 11 04:23:15 2010
     - Changed the way Class::XSAccessor is invoked if available
       (recommended by C::XSA author)
@@ -40,7 +43,7 @@ Revision history for Class::Accessor::Grouped.
     - Tweak code for pure speed while fixing performance issue when assigning @_
     under Perl 5.10.0
 
-0.07000 
+0.07000
     - Altered get_inherited to return undef rather than () when no value
         set for Class::Data::(Inheritable|Accessor) compatiblity
     - Fixed spelling test error

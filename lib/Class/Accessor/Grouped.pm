@@ -7,8 +7,11 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09004';
+our $VERSION = '0.09005';
 $VERSION = eval $VERSION;
+
+# Class::XSAccessor is segfaulting on win32, so be careful
+# Win32 users can set $hasXS to try to use it anyway
 
 our $hasXS;
 
@@ -16,10 +19,12 @@ sub _hasXS {
   if (not defined $hasXS) {
     $hasXS = 0;
 
-    eval {
-      require Class::XSAccessor;
-      $hasXS = 1;
-    };
+    if ($^O ne 'MSWin32') {
+      eval {
+        require Class::XSAccessor;
+        $hasXS = 1;
+      };
+    }
   }
 
   return $hasXS;
@@ -81,7 +86,7 @@ sub mk_group_accessors {
 
         # So we don't have to do lots of lookups inside the loop.
         $maker = $self->can($maker) unless ref $maker;
-        
+
         my $hasXS = _hasXS();
 
         foreach my $field (@fields) {
@@ -93,7 +98,7 @@ sub mk_group_accessors {
             my $name = $field;
 
             ($name, $field) = @$field if ref $field;
-            
+
             my $alias = "_${name}_accessor";
             my $full_name = join('::', $class, $name);
             my $full_alias = join('::', $class, $alias);
@@ -111,10 +116,10 @@ sub mk_group_accessors {
             else {
                 my $accessor = $self->$maker($group, $field);
                 my $alias_accessor = $self->$maker($group, $field);
-                
+
                 *$full_name = Sub::Name::subname($full_name, $accessor);
                   #unless defined &{$class."\:\:$field"}
-                
+
                 *$full_alias = Sub::Name::subname($full_alias, $alias_accessor);
                   #unless defined &{$class."\:\:$alias"}
             }
