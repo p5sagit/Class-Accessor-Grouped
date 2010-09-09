@@ -2,7 +2,6 @@ package Class::Accessor::Grouped;
 use strict;
 use warnings;
 use Carp ();
-use Class::Inspector ();
 use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
@@ -456,6 +455,7 @@ it. This method will die if the specified class could not be loaded.
 sub set_component_class {
     if ($_[2]) {
         local $^W = 0;
+        require Class::Inspector;
         if (Class::Inspector->installed($_[2]) && !Class::Inspector->loaded($_[2])) {
             eval "use $_[2]";
 
