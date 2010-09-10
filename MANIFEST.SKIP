@@ -39,4 +39,4 @@ Build.bat
 # Avoid author test files.
 \bpod_spelling.t$
 
-benchmark.pl
+^benchmark
