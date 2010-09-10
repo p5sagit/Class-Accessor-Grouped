@@ -485,13 +485,19 @@ You can speed up accessors of type 'simple' by installing L<Class::XSAccessor>.
 =head1 AUTHORS
 
 Matt S. Trout <mst@shadowcatsystems.co.uk>
+
 Christopher H. Laco <claco@chrislaco.com>
 
 =head1 CONTRIBUTORS
 
+Caelum: Rafael Kitover <rkitover@cpan.org>
+
 groditi: Guillermo Roditi <groditi@cpan.org>
-ribasushi: Peter Rabbitson <ribasushi@cpan.org>
+
 Jason Plum <jason.plum@bmmsi.com>
+
+ribasushi: Peter Rabbitson <ribasushi@cpan.org>
+
 
 =head1 COPYRIGHT & LICENSE
 
