@@ -1,18 +1,18 @@
 use Test::More tests => 8;
+use Test::Exception;
 use strict;
 use warnings;
 use lib 't/lib';
 use Class::Inspector;
-use AccessorGroups;
+use AccessorGroupsComp;
 
-is(AccessorGroups->result_class, undef);
+is(AccessorGroupsComp->result_class, undef);
 
 ## croak on set where class can't be loaded and it's a physical class
-my $dying = AccessorGroups->new;
-eval {
+my $dying = AccessorGroupsComp->new;
+throws_ok {
     $dying->result_class('NotReallyAClass');
-};
-ok($@ =~ /Could not load result_class 'NotReallyAClass'/);
+} qr/Could not load result_class 'NotReallyAClass'/;
 is($dying->result_class, undef);
 
 
@@ -22,10 +22,10 @@ $dying->result_class('JunkiesNeverInstalled');
 is($dying->result_class, 'JunkiesNeverInstalled');
 
 ok(!Class::Inspector->loaded('BaseInheritedGroups'));
-AccessorGroups->result_class('BaseInheritedGroups');
+AccessorGroupsComp->result_class('BaseInheritedGroups');
 ok(Class::Inspector->loaded('BaseInheritedGroups'));
-is(AccessorGroups->result_class, 'BaseInheritedGroups');
+is(AccessorGroupsComp->result_class, 'BaseInheritedGroups');
 
 ## unset it
-AccessorGroups->result_class(undef);
-is(AccessorGroups->result_class, undef);
+AccessorGroupsComp->result_class(undef);
+is(AccessorGroupsComp->result_class, undef);

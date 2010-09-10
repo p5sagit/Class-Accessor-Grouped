@@ -1,4 +1,5 @@
 use Test::More tests => 36;
+use Test::Exception;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -57,15 +58,13 @@ is(BaseInheritedGroups->basefield, 'All Your Base');
 # croak on get/set on non hash-based object
 my $dying = NotHashBased->new;
 
-eval {
+throws_ok {
     $dying->killme;
-};
-ok($@ =~ /Cannot get.*is not hash-based/);
+} qr/Cannot get.*is not hash-based/;
 
-eval {
+throws_ok {
     $dying->killme('foo');
-};
-ok($@ =~ /Cannot set.*is not hash-based/);
+} qr/Cannot set.*is not hash-based/;
 
 # make sure we're get defined items, even 0, ''
 BaseInheritedGroups->basefield('base');

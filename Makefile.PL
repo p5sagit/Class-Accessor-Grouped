@@ -1,7 +1,7 @@
 # $Id$
 use strict;
 use warnings;
-use inc::Module::Install 0.91;
+use inc::Module::Install 1;
 
 name 'Class-Accessor-Grouped';
 license 'perl';
@@ -14,20 +14,16 @@ requires 'MRO::Compat';
 requires 'Class::Inspector';
 requires 'Sub::Name' => '0.04';
 
-# removed due to segfaults, see _hasXS()
-#requires 'Class::XSAccessor';
-
 test_requires 'Sub::Identify';
+test_requires 'Test::Exception';
 
 clean_files "Class-Accessor-Grouped-* t/var";
 
 if (-e 'MANIFEST.SKIP') {
     system('pod2text lib/Class/Accessor/Grouped.pm > README');
+    realclean_files 'README';
 }
 
-realclean_files 'README';
-
-auto_provides;
 auto_install;
 
 resources repository =>
