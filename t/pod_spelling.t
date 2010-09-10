@@ -38,3 +38,5 @@ getters
 ribasushi
 Rabbitson
 groditi
+Caelum
+Kitover
