@@ -15,6 +15,7 @@ requires 'Class::Inspector';
 requires 'Sub::Name' => '0.04';
 
 test_requires 'Sub::Identify';
+test_requires 'Test::More' => '0.94';
 test_requires 'Test::Exception';
 
 clean_files "Class-Accessor-Grouped-* t/var";

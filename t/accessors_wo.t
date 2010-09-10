@@ -1,7 +1,21 @@
 use Test::More tests => 38;
+use Test::Exception;
 use strict;
 use warnings;
 use lib 't/lib';
+
+# we test the pure-perl versions only, but allow overrides
+# from the accessor_xs test-umbrella
+# Also make sure a rogue envvar will not interfere with
+# things
+my $use_xs;
+BEGIN {
+    $Class::Accessor::Grouped::USE_XS = 0
+        unless defined $Class::Accessor::Grouped::USE_XS;
+    $ENV{CAG_USE_XS} = 1;
+    $use_xs = $Class::Accessor::Grouped::USE_XS;
+};
+
 use AccessorGroupsWO;
 
 my $class = AccessorGroupsWO->new;
@@ -24,57 +38,54 @@ my $class = AccessorGroupsWO->new;
     *AccessorGroupsWO::DESTROY = sub {};
 };
 
-foreach (qw/singlefield multiple1 multiple2/) {
-    my $name = $_;
+my $test_accessors = {
+    singlefield => {
+        is_xs => $use_xs,
+    },
+    multiple1 => {
+    },
+    multiple2 => {
+    },
+    lr1name => {
+        custom_field => 'lr1;field',
+    },
+    lr2name => {
+        custom_field => "lr2'field",
+    },
+};
+
+for my $name (sort keys %$test_accessors) {
+
     my $alias = "_${name}_accessor";
+    my $field = $test_accessors->{$name}{custom_field} || $name;
 
     can_ok($class, $name, $alias);
+
+    ok(!$class->can($field))
+      if $field ne $name;
 
     # set via name
     is($class->$name('a'), 'a');
-    is($class->{$name}, 'a');
+    is($class->{$field}, 'a');
 
     # alias sets same as name
     is($class->$alias('b'), 'b');
-    is($class->{$name}, 'b');
+    is($class->{$field}, 'b');
+
+    my $wo_regex = $test_accessors->{$name}{is_xs}
+        ? qr/Usage\:.+$name.*\(self, newvalue\)/
+        : qr/cannot access the value of '\Q$field\E'/
+    ;
 
     # die on get via name/alias
-    eval {
+    throws_ok {
         $class->$name;
-    };
-    ok($@ =~ /cannot access/);
+    } $wo_regex;
 
-    eval {
+    throws_ok {
         $class->$alias;
-    };
-    ok($@ =~ /cannot access/);
+    } $wo_regex;
 };
 
-foreach (qw/lr1 lr2/) {
-    my $name = "$_".'name';
-    my $alias = "_${name}_accessor";
-
-    my $field = { lr1 => 'lr1;field', lr2 => q{lr2'field} }->{$_};
-
-    can_ok($class, $name, $alias);
-    ok(!$class->can($field));
-
-    # set via name
-    is($class->$name('c'), 'c');
-    is($class->{$field}, 'c');
-
-    # alias sets same as name
-    is($class->$alias('d'), 'd');
-    is($class->{$field}, 'd');
-
-    # die on get via name/alias
-    eval {
-        $class->$name;
-    };
-    ok($@ =~ /cannot access/);
-
-    eval {
-        $class->$alias;
-    };
-    ok($@ =~ /cannot access/);
-};
+# important
+1;

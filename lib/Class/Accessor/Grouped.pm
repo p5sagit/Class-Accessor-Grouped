@@ -9,25 +9,41 @@ use Sub::Name ();
 our $VERSION = '0.09005';
 $VERSION = eval $VERSION;
 
-# Class::XSAccessor is segfaulting on win32, so be careful
-# Win32 users can set $hasXS to try to use it anyway
+# when changing minimum version don't forget to adjust L</PERFROMANCE> as well
+our $__minimum_xsa_version = '1.06';
 
-our $hasXS;
+our $USE_XS;
+# the unless defined is here so that we can override the value
+# before require/use, *regardless* of the state of $ENV{CAG_USE_XS}
+$USE_XS = $ENV{CAG_USE_XS}
+    unless defined $USE_XS;
 
-sub _hasXS {
-  if (not defined $hasXS) {
-    $hasXS = 0;
+my $xsa_loaded;
 
-    if ($^O ne 'MSWin32') {
-      eval {
-        require Class::XSAccessor;
-        $hasXS = 1;
-      };
+my $load_xsa = sub {
+    return if $xsa_loaded++;
+    require Class::XSAccessor;
+    Class::XSAccessor->VERSION($__minimum_xsa_version);
+};
+
+my $use_xs = sub {
+    if (defined $USE_XS) {
+        $load_xsa->() if ($USE_XS && ! $xsa_loaded);
+        return $USE_XS;
     }
-  }
 
-  return $hasXS;
-}
+    $USE_XS = 0;
+
+    # Class::XSAccessor is segfaulting on win32, in some
+    # esoteric heavily-threaded scenarios
+    # Win32 users can set $USE_XS/CAG_USE_XS to try to use it anyway
+    if ($^O ne 'MSWin32') {
+        local $@;
+        eval { $load_xsa->(); $USE_XS = 1 };
+    }
+
+    return $USE_XS;
+};
 
 =head1 NAME
 
@@ -86,41 +102,30 @@ sub mk_group_accessors {
         # So we don't have to do lots of lookups inside the loop.
         $maker = $self->can($maker) unless ref $maker;
 
-        my $hasXS = _hasXS();
-
-        foreach my $field (@fields) {
-            if( $field eq 'DESTROY' ) {
+        foreach (@fields) {
+            if( $_ eq 'DESTROY' ) {
                 Carp::carp("Having a data accessor named DESTROY  in ".
                              "'$class' is unwise.");
             }
 
-            my $name = $field;
-
-            ($name, $field) = @$field if ref $field;
+            my ($name, $field) = (ref $_)
+                ? (@$_)
+                : ($_, $_)
+            ;
 
             my $alias = "_${name}_accessor";
-            my $full_name = join('::', $class, $name);
-            my $full_alias = join('::', $class, $alias);
-            if ( $hasXS && $group eq 'simple' ) {
-                require Class::XSAccessor;
-                Class::XSAccessor->import({
-                  replace => 1,
-                  class => $class,
-                  accessors => {
-                    $name => $field,
-                    $alias => $field,
-                  },
-                });
-            }
-            else {
-                my $accessor = $self->$maker($group, $field);
-                my $alias_accessor = $self->$maker($group, $field);
 
-                *$full_name = Sub::Name::subname($full_name, $accessor);
-                  #unless defined &{$class."\:\:$field"}
+            for my $meth ($name, $alias) {
 
-                *$full_alias = Sub::Name::subname($full_alias, $alias_accessor);
-                  #unless defined &{$class."\:\:$alias"}
+                # the maker may elect to not return anything, meaning it already
+                # installed the coderef for us
+                my $cref = $self->$maker($group, $field, $meth)
+                    or next;
+
+                my $fq_meth = join('::', $class, $meth);
+
+                *$fq_meth = Sub::Name::subname($fq_meth, $cref);
+                    #unless defined &{$class."\:\:$field"}
             }
         }
     }
@@ -174,19 +179,31 @@ sub mk_group_wo_accessors {
 
 =over 4
 
-=item Arguments: $group, $field
+=item Arguments: $group, $field, $method
 
-Returns: $sub (\CODE)
+Returns: \&accessor_coderef ?
 
 =back
 
-Returns a single accessor in a given group; called by mk_group_accessors
-for each entry in @fieldspec.
+Called by mk_group_accessors for each entry in @fieldspec. Either returns
+a coderef which will be installed at C<&__PACKAGE__::$method>, or returns
+C<undef> if it elects to install the coderef on its own.
 
 =cut
 
 sub make_group_accessor {
-    my ($class, $group, $field) = @_;
+    my ($class, $group, $field, $name) = @_;
+
+    if ( $group eq 'simple' && $use_xs->() ) {
+        Class::XSAccessor->import({
+            replace => 1,
+            class => $class,
+            accessors => {
+                $name => $field,
+            },
+        });
+        return;
+    }
 
     my $set = "set_$group";
     my $get = "get_$group";
@@ -211,19 +228,31 @@ sub make_group_accessor {
 
 =over 4
 
-=item Arguments: $group, $field
+=item Arguments: $group, $field, $method
 
-Returns: $sub (\CODE)
+Returns: \&accessor_coderef ?
 
 =back
 
-Returns a single read-only accessor in a given group; called by
-mk_group_ro_accessors for each entry in @fieldspec.
+Called by mk_group_ro_accessors for each entry in @fieldspec. Either returns
+a coderef which will be installed at C<&__PACKAGE__::$method>, or returns
+C<undef> if it elects to install the coderef on its own.
 
 =cut
 
 sub make_group_ro_accessor {
-    my($class, $group, $field) = @_;
+    my($class, $group, $field, $name) = @_;
+
+    if ( $group eq 'simple' && $use_xs->() ) {
+        Class::XSAccessor->import({
+            replace => 1,
+            class => $class,
+            getters => {
+                $name => $field,
+            },
+        });
+        return;
+    }
 
     my $get = "get_$group";
 
@@ -248,19 +277,31 @@ sub make_group_ro_accessor {
 
 =over 4
 
-=item Arguments: $group, $field
+=item Arguments: $group, $field, $method
 
-Returns: $sub (\CODE)
+Returns: \&accessor_coderef ?
 
 =back
 
-Returns a single write-only accessor in a given group; called by
-mk_group_wo_accessors for each entry in @fieldspec.
+Called by mk_group_wo_accessors for each entry in @fieldspec. Either returns
+a coderef which will be installed at C<&__PACKAGE__::$method>, or returns
+C<undef> if it elects to install the coderef on its own.
 
 =cut
 
 sub make_group_wo_accessor {
-    my($class, $group, $field) = @_;
+    my($class, $group, $field, $name) = @_;
+
+    if ( $group eq 'simple' && $use_xs->() ) {
+        Class::XSAccessor->import({
+            replace => 1,
+            class => $class,
+            setters => {
+                $name => $field,
+            },
+        });
+        return;
+    }
 
     my $set = "set_$group";
 
@@ -480,7 +521,45 @@ sub get_super_paths {
 
 =head1 PERFORMANCE
 
-You can speed up accessors of type 'simple' by installing L<Class::XSAccessor>.
+To provide total flexibility L<Class::Accessor::Grouped> calls methods
+internally while performing get/set actions, which makes it noticeably
+slower than similar modules. To compensate, this module will automatically
+use the insanely fast L<Class::XSAccessor> to generate the C<simple>-group
+accessors, if L<< Class::XSAccessor >= 1.06|Class::XSAccessor >> is
+available on your system.
+
+=head2 Benchmark
+
+This is the result of a set/get/set loop benchmark on perl 5.12.1 with
+thread support, showcasing most popular accessor builders: L<Moose>, L<Mouse>,
+L<CAF|Class::Accessor::Fast>, L<CAF_XS|Class::Accessor::Fast::XS>
+and L<XSA|Class::XSAccessor>:
+
+            Rate     CAG   moOse     CAF HANDMADE  CAF_XS moUse_XS CAG_XS     XSA
+ CAG      1777/s      --    -27%    -29%     -36%    -62%     -67%   -72%    -73%
+ moOse    2421/s     36%      --     -4%     -13%    -48%     -55%   -61%    -63%
+ CAF      2511/s     41%      4%      --     -10%    -47%     -53%   -60%    -61%
+ HANDMADE 2791/s     57%     15%     11%       --    -41%     -48%   -56%    -57%
+ CAF_XS   4699/s    164%     94%     87%      68%      --     -13%   -25%    -28%
+ moUse_XS 5375/s    203%    122%    114%      93%     14%       --   -14%    -18%
+ CAG_XS   6279/s    253%    159%    150%     125%     34%      17%     --     -4%
+ XSA      6515/s    267%    169%    159%     133%     39%      21%     4%      --
+
+Benchmark program is available in the root of the
+L<repository|http://search.cpan.org/dist/Class-Accessor-Grouped/>:
+
+=head2 Notes on Class::XSAccessor
+
+While L<Class::XSAccessor> works surprisingly well for the amount of black
+magic it tries to pull off, it's still black magic. At present (Sep 2010)
+the module is known to have problems on Windows under heavy thread-stress
+(e.g. Win32+Apache+mod_perl). Thus for the time being L<Class::XSAccessor>
+will not be used automatically if you are running under C<MSWin32>.
+
+You can force the use of L<Class::XSAccessor> before creating a particular
+C<simple> accessor by either manipulating the global variable
+C<$Class::Accessor::Grouped::USE_XS>, or you can do so before runtime via the
+C<CAG_USE_XS> environment variable.
 
 =head1 AUTHORS
 

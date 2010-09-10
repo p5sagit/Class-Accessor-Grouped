@@ -1,5 +1,10 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Fix bugs in ro/wo accessor generation when XSAccessor is
+      being used
+    - Better Class::XSAccessor usage control - introducing
+      $ENV{CAG_USE_XS} and $Class::Accessor::Grouped::USE_XS
+
 0.09005 Wed Sep  1 04:00:00 2010
     - Again, remove Class::XSAccessor for Win32 sine it still breaks
 

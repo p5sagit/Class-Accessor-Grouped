@@ -2,14 +2,19 @@ use Test::More tests => 62;
 use strict;
 use warnings;
 use lib 't/lib';
-use Sub::Identify qw/sub_name sub_fullname/;;
+use Sub::Identify qw/sub_name sub_fullname/;
 
+# we test the pure-perl versions only, but allow overrides
+# from the accessor_xs test-umbrella
+# Also make sure a rogue envvar will not interfere with
+# things
 BEGIN {
-    # Disable XSAccessor to test pure-Perl accessors
-    $Class::Accessor::Grouped::hasXS = 0;
-    
-    require AccessorGroups;
-}
+    $Class::Accessor::Grouped::USE_XS = 0
+        unless defined $Class::Accessor::Grouped::USE_XS;
+    $ENV{CAG_USE_XS} = 1;
+};
+
+use AccessorGroups;
 
 my $class = AccessorGroups->new;
 
@@ -98,4 +103,5 @@ foreach (qw/lr1 lr2/) {
     is($class->$name, 'd');
 };
 
+# important
 1;
