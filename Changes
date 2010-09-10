@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+0.09006 Wed Sep 10 23:55:00 2010
     - Fix bugs in ro/wo accessor generation when XSAccessor is
       being used
     - Better Class::XSAccessor usage control - introducing
