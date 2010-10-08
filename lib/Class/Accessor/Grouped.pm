@@ -18,7 +18,7 @@ our $USE_XS;
 $USE_XS = $ENV{CAG_USE_XS}
     unless defined $USE_XS;
 
-my $xsa_loaded;
+my ($xsa_loaded, $xsa_autodetected);
 
 my $load_xsa = sub {
     return if $xsa_loaded++;
@@ -32,6 +32,7 @@ my $use_xs = sub {
         return $USE_XS;
     }
 
+    $xsa_autodetected = 1;
     $USE_XS = 0;
 
     # Class::XSAccessor is segfaulting on win32, in some
@@ -43,6 +44,14 @@ my $use_xs = sub {
     }
 
     return $USE_XS;
+};
+
+my $add_xs_accessor = sub {
+    Class::XSAccessor->import({
+        replace => 1,
+        %{shift()}
+    });
+    return undef;
 };
 
 =head1 NAME
@@ -195,14 +204,12 @@ sub make_group_accessor {
     my ($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        Class::XSAccessor->import({
-            replace => 1,
+        return $add_xs_accessor->({
             class => $class,
             accessors => {
                 $name => $field,
             },
         });
-        return;
     }
 
     my $set = "set_$group";
@@ -244,14 +251,12 @@ sub make_group_ro_accessor {
     my($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        Class::XSAccessor->import({
-            replace => 1,
+        return $add_xs_accessor->({
             class => $class,
             getters => {
                 $name => $field,
             },
         });
-        return;
     }
 
     my $get = "get_$group";
@@ -293,14 +298,12 @@ sub make_group_wo_accessor {
     my($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        Class::XSAccessor->import({
-            replace => 1,
+        return $add_xs_accessor->({
             class => $class,
             setters => {
                 $name => $field,
             },
         });
-        return;
     }
 
     my $set = "set_$group";
