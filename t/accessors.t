@@ -16,11 +16,10 @@ BEGIN {
     $use_xs = $Class::Accessor::Grouped::USE_XS;
 };
 
-use AccessorGroups;
-
-my $obj = AccessorGroups->new;
+use AccessorGroupsSubclass;
 
 {
+    my $obj = AccessorGroups->new;
     my $class = ref $obj;
     my $name = 'multiple1';
     my $alias = "_${name}_accessor";
@@ -32,7 +31,6 @@ my $obj = AccessorGroups->new;
     is(sub_fullname($alias_accessor), join('::',$class,$alias), 'alias FQ name');
 
     my $warned = 0;
-
     local $SIG{__WARN__} = sub {
         if  (shift =~ /DESTROY/i) {
             $warned++;
@@ -42,9 +40,12 @@ my $obj = AccessorGroups->new;
     no warnings qw/once/;
     local *AccessorGroups::DESTROY = sub {};
 
-    $obj->mk_group_accessors('warnings', 'DESTROY');
+    $class->mk_group_accessors('warnings', 'DESTROY');
     ok($warned);
-}
+};
+
+
+my $obj = AccessorGroupsSubclass->new;
 
 my $test_accessors = {
     singlefield => {
