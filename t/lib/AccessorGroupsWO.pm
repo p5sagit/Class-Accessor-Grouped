@@ -13,8 +13,7 @@ sub new {
 
 foreach (qw/multiple listref/) {
     no strict 'refs';
-
-    *{"set_$_"} = \&Class::Accessor::Grouped::set_simple;
+    *{"set_$_"} = __PACKAGE__->can('set_simple');
 };
 
 1;

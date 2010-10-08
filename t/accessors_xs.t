@@ -16,7 +16,7 @@ BEGIN {
       if $@;
 }
 
-# rerun all 3 tests under XSAccessor
+# rerun the regular 3 tests under XSAccessor
 $Class::Accessor::Grouped::USE_XS = 1;
 for (qw/accessors.t accessors_ro.t accessors_wo.t/) {
   subtest "$_ with USE_XS" => sub { require( catfile($Bin, $_) ) }

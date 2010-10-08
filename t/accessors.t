@@ -8,10 +8,12 @@ use Sub::Identify qw/sub_name sub_fullname/;
 # from the accessor_xs test-umbrella
 # Also make sure a rogue envvar will not interfere with
 # things
+my $use_xs;
 BEGIN {
     $Class::Accessor::Grouped::USE_XS = 0
         unless defined $Class::Accessor::Grouped::USE_XS;
     $ENV{CAG_USE_XS} = 1;
+    $use_xs = $Class::Accessor::Grouped::USE_XS;
 };
 
 use AccessorGroups;
@@ -48,11 +50,30 @@ my $class = AccessorGroups->new;
   is(sub_fullname($alias_accessor), join('::',$class_name,$alias), 'alias FQ name');
 }
 
-foreach (qw/singlefield multiple1 multiple2/) {
-    my $name = $_;
+my $test_accessors = {
+    singlefield => {
+        is_xs => $use_xs,
+    },
+    multiple1 => {
+    },
+    multiple2 => {
+    },
+    lr1name => {
+        custom_field => 'lr1;field',
+    },
+    lr2name => {
+        custom_field => "lr2'field",
+    },
+};
+
+
+for my $name (sort keys %$test_accessors) {
     my $alias = "_${name}_accessor";
+    my $field = $test_accessors->{$name}{custom_field} || $name;
 
     can_ok($class, $name, $alias);
+    ok(!$class->can($field))
+      if $field ne $name;
 
     is($class->$name, undef);
     is($class->$alias, undef);
@@ -60,7 +81,7 @@ foreach (qw/singlefield multiple1 multiple2/) {
     # get/set via name
     is($class->$name('a'), 'a');
     is($class->$name, 'a');
-    is($class->{$name}, 'a');
+    is($class->{$field}, 'a');
 
     # alias gets same as name
     is($class->$alias, 'a');
@@ -68,39 +89,10 @@ foreach (qw/singlefield multiple1 multiple2/) {
     # get/set via alias
     is($class->$alias('b'), 'b');
     is($class->$alias, 'b');
-    is($class->{$name}, 'b');
+    is($class->{$field}, 'b');
 
     # alias gets same as name
     is($class->$name, 'b');
-};
-
-foreach (qw/lr1 lr2/) {
-    my $name = "$_".'name';
-    my $alias = "_${name}_accessor";
-
-    my $field = { lr1 => 'lr1;field', lr2 => q{lr2'field} }->{$_};
-
-    can_ok($class, $name, $alias);
-    ok(!$class->can($field));
-
-    is($class->$name, undef);
-    is($class->$alias, undef);
-
-    # get/set via name
-    is($class->$name('c'), 'c');
-    is($class->$name, 'c');
-    is($class->{$field}, 'c');
-
-    # alias gets same as name
-    is($class->$alias, 'c');
-
-    # get/set via alias
-    is($class->$alias('d'), 'd');
-    is($class->$alias, 'd');
-    is($class->{$field}, 'd');
-
-    # alias gets same as name
-    is($class->$name, 'd');
 };
 
 # important
