@@ -46,12 +46,81 @@ my $use_xs = sub {
     return $USE_XS;
 };
 
+my $maker_type_map = {
+  rw => {
+    xsa => 'accessors',
+    cag => 'make_group_accessor',
+  },
+  ro => {
+    xsa => 'getters',
+    cag => 'make_group_ro_accessor',
+  },
+  wo => {
+    xsa => 'setters',
+    cag => 'make_group_wo_accessor',
+  },
+};
+
+# When installing an XSA simple accessor, we need to make sure we are not
+# short-circuiting a (compile or runtime) get_simple/set_simple override.
+# What we do here is install a lazy first-access check, which will decide
+# the ultimate coderef being placed in the accessor slot
+
+my $no_xsa_classes_warned;
 my $add_xs_accessor = sub {
+    my ($class, $group, $field, $name, $type) = @_;
+
     Class::XSAccessor->import({
         replace => 1,
-        %{shift()}
+        class => $class,
+        $maker_type_map->{$type}{xsa} => {
+            $name => $field,
+        },
     });
-    return undef;
+
+    my $xs_cref = $class->can($name);
+
+    my $pp_cref = do {
+        my $cag_method = $maker_type_map->{$type}{cag};
+        local $USE_XS = 0;
+        $class->$cag_method ($group, $field, $name, $type);
+    };
+
+    # can't use pkg_gen to track this stuff, as it doesn't
+    # detect superclass mucking
+    my $original_getter = __PACKAGE__->can ("get_$group");
+    my $original_setter = __PACKAGE__->can ("set_$group");
+
+    return sub {
+        my $self = $_[0];
+        my $current_class = (ref $self) || $self;
+
+        my $final_cref;
+        if (
+            $current_class->can("get_$group") == $original_getter
+                &&
+            $current_class->can("set_$group") == $original_setter
+        ) {
+            # nothing has changed, might as well use the XS crefs
+            # (if one changes methods that far into runtime - look pieces!)
+            $final_cref = $xs_cref;
+        }
+        else {
+            $final_cref = $pp_cref;
+            if ($USE_XS and ! $xsa_autodetected and ! $no_xsa_classes_warned->{$current_class}++) {
+                warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class'
+                  . " '$current_class' due to an overriden get_$group and/or set_$group\n";
+            }
+        }
+
+        my $fq_meth = "${current_class}::${name}";
+
+        no strict qw/refs/;
+        no warnings qw/redefine/;
+        *$fq_meth = Sub::Name::subname($fq_meth, $final_cref);
+
+        goto $final_cref;
+    };
 };
 
 =head1 NAME
@@ -204,12 +273,7 @@ sub make_group_accessor {
     my ($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        return $add_xs_accessor->({
-            class => $class,
-            accessors => {
-                $name => $field,
-            },
-        });
+        return $add_xs_accessor->(@_, 'rw');
     }
 
     my $set = "set_$group";
@@ -251,12 +315,7 @@ sub make_group_ro_accessor {
     my($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        return $add_xs_accessor->({
-            class => $class,
-            getters => {
-                $name => $field,
-            },
-        });
+        return $add_xs_accessor->(@_, 'ro');
     }
 
     my $get = "get_$group";
@@ -298,12 +357,7 @@ sub make_group_wo_accessor {
     my($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        return $add_xs_accessor->({
-            class => $class,
-            setters => {
-                $name => $field,
-            },
-        });
+        return $add_xs_accessor->(@_, 'wo')
     }
 
     my $set = "set_$group";

@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Fix corner case when get/set_simple overrides are circumvented
+      iff Class::XSAccessor is present
+
 0.09006 Wed Sep 10 23:55:00 2010
     - Fix bugs in ro/wo accessor generation when XSAccessor is
       being used

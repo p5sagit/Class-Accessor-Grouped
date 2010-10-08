@@ -53,6 +53,7 @@ my $class = AccessorGroups->new;
 my $test_accessors = {
     singlefield => {
         is_xs => $use_xs,
+        has_extra => 1,
     },
     multiple1 => {
     },
@@ -70,6 +71,7 @@ my $test_accessors = {
 for my $name (sort keys %$test_accessors) {
     my $alias = "_${name}_accessor";
     my $field = $test_accessors->{$name}{custom_field} || $name;
+    my $extra = $test_accessors->{$name}{has_extra};
 
     can_ok($class, $name, $alias);
     ok(!$class->can($field))
@@ -81,7 +83,7 @@ for my $name (sort keys %$test_accessors) {
     # get/set via name
     is($class->$name('a'), 'a');
     is($class->$name, 'a');
-    is($class->{$field}, 'a');
+    is($class->{$field}, $extra ? 'a Extra tackled on' : 'a');
 
     # alias gets same as name
     is($class->$alias, 'a');
@@ -89,7 +91,7 @@ for my $name (sort keys %$test_accessors) {
     # get/set via alias
     is($class->$alias('b'), 'b');
     is($class->$alias, 'b');
-    is($class->{$field}, 'b');
+    is($class->{$field}, $extra ? 'b Extra tackled on' : 'b');
 
     # alias gets same as name
     is($class->$name, 'b');
