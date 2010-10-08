@@ -2,7 +2,7 @@ use Test::More tests => 62;
 use strict;
 use warnings;
 use lib 't/lib';
-use Sub::Identify qw/sub_name sub_fullname/;
+use B qw/svref_2object/;
 
 # we test the pure-perl versions only, but allow overrides
 # from the accessor_xs test-umbrella
@@ -19,16 +19,16 @@ BEGIN {
 use AccessorGroupsSubclass;
 
 {
-    my $obj = AccessorGroups->new;
+    my $obj = AccessorGroupsSubclass->new;
     my $class = ref $obj;
     my $name = 'multiple1';
     my $alias = "_${name}_accessor";
-    my $accessor = $obj->can($name);
-    my $alias_accessor = $obj->can($alias);
-    isnt(sub_name($accessor), '__ANON__', 'accessor is named');
-    isnt(sub_name($alias_accessor), '__ANON__', 'alias is named');
-    is(sub_fullname($accessor), join('::',$class,$name), 'accessor FQ name');
-    is(sub_fullname($alias_accessor), join('::',$class,$alias), 'alias FQ name');
+
+    for my $meth ($name, $alias) {
+        my $cv = svref_2object( $obj->can($meth) );
+        is($cv->GV->NAME, $meth, "$meth accessor is named");
+        is($cv->GV->STASH->NAME, 'AccessorGroups', "$meth class correct");
+    }
 
     my $warned = 0;
     local $SIG{__WARN__} = sub {
@@ -38,7 +38,7 @@ use AccessorGroupsSubclass;
     };
 
     no warnings qw/once/;
-    local *AccessorGroups::DESTROY = sub {};
+    local *AccessorGroupsSubclass::DESTROY = sub {};
 
     $class->mk_group_accessors('warnings', 'DESTROY');
     ok($warned);
