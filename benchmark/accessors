@@ -7,6 +7,7 @@ BEGIN {
     Class::XSAccessor
     Class::Accessor::Fast
     Class::Accessor::Fast::XS
+    Class::XSAccessor::Compat
     Moose
     Mouse
   /) {
@@ -46,6 +47,12 @@ use Benchmark qw/:hireswallclock cmpthese/;
     require Class::Accessor::Fast::XS;
     local @ISA = 'Class::Accessor::Fast::XS';
     __PACKAGE__->mk_accessors ('caf_xs');
+  }
+
+  {
+    require Class::XSAccessor::Compat;
+    local @ISA = 'Class::XSAccessor::Compat';
+    __PACKAGE__->mk_accessors ('caf_xsa');
   }
 
   sub handmade {
@@ -91,7 +98,7 @@ my $tasks = {
 #  }
 };
 
-for (qw/CAG CAG_XS CAF CAF_XS XSA HANDMADE/) {
+for (qw/CAG CAG_XS CAF CAF_XS CAF_XSA XSA HANDMADE/) {
   _add_task ($tasks, $_, lc($_), 'base');
 }
 
