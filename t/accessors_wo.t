@@ -18,7 +18,7 @@ BEGIN {
 
 use AccessorGroupsWO;
 
-my $class = AccessorGroupsWO->new;
+my $obj = AccessorGroupsWO->new;
 
 {
     my $warned = 0;
@@ -29,13 +29,11 @@ my $class = AccessorGroupsWO->new;
         };
     };
 
-    $class->mk_group_wo_accessors('warnings', 'DESTROY');
+    no warnings qw/once/;
+    local *AccessorGroupsWO::DESTROY = sub {};
 
+    $obj->mk_group_wo_accessors('warnings', 'DESTROY');
     ok($warned);
-
-    # restore non-accessorized DESTROY
-    no warnings;
-    *AccessorGroupsWO::DESTROY = sub {};
 };
 
 my $test_accessors = {
@@ -59,18 +57,18 @@ for my $name (sort keys %$test_accessors) {
     my $alias = "_${name}_accessor";
     my $field = $test_accessors->{$name}{custom_field} || $name;
 
-    can_ok($class, $name, $alias);
+    can_ok($obj, $name, $alias);
 
-    ok(!$class->can($field))
+    ok(!$obj->can($field))
       if $field ne $name;
 
     # set via name
-    is($class->$name('a'), 'a');
-    is($class->{$field}, 'a');
+    is($obj->$name('a'), 'a');
+    is($obj->{$field}, 'a');
 
     # alias sets same as name
-    is($class->$alias('b'), 'b');
-    is($class->{$field}, 'b');
+    is($obj->$alias('b'), 'b');
+    is($obj->{$field}, 'b');
 
     my $wo_regex = $test_accessors->{$name}{is_xs}
         ? qr/Usage\:.+$name.*\(self, newvalue\)/
@@ -79,11 +77,11 @@ for my $name (sort keys %$test_accessors) {
 
     # die on get via name/alias
     throws_ok {
-        $class->$name;
+        $obj->$name;
     } $wo_regex;
 
     throws_ok {
-        $class->$alias;
+        $obj->$alias;
     } $wo_regex;
 };
 

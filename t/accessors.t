@@ -18,9 +18,19 @@ BEGIN {
 
 use AccessorGroups;
 
-my $class = AccessorGroups->new;
+my $obj = AccessorGroups->new;
 
 {
+    my $class = ref $obj;
+    my $name = 'multiple1';
+    my $alias = "_${name}_accessor";
+    my $accessor = $obj->can($name);
+    my $alias_accessor = $obj->can($alias);
+    isnt(sub_name($accessor), '__ANON__', 'accessor is named');
+    isnt(sub_name($alias_accessor), '__ANON__', 'alias is named');
+    is(sub_fullname($accessor), join('::',$class,$name), 'accessor FQ name');
+    is(sub_fullname($alias_accessor), join('::',$class,$alias), 'alias FQ name');
+
     my $warned = 0;
 
     local $SIG{__WARN__} = sub {
@@ -29,25 +39,11 @@ my $class = AccessorGroups->new;
         };
     };
 
-    $class->mk_group_accessors('warnings', 'DESTROY');
+    no warnings qw/once/;
+    local *AccessorGroups::DESTROY = sub {};
 
+    $obj->mk_group_accessors('warnings', 'DESTROY');
     ok($warned);
-
-    # restore non-accessorized DESTROY
-    no warnings;
-    *AccessorGroups::DESTROY = sub {};
-};
-
-{
-  my $class_name = ref $class;
-  my $name = 'multiple1';
-  my $alias = "_${name}_accessor";
-  my $accessor = $class->can($name);
-  my $alias_accessor = $class->can($alias);
-  isnt(sub_name($accessor), '__ANON__', 'accessor is named');
-  isnt(sub_name($alias_accessor), '__ANON__', 'alias is named');
-  is(sub_fullname($accessor), join('::',$class_name,$name), 'accessor FQ name');
-  is(sub_fullname($alias_accessor), join('::',$class_name,$alias), 'alias FQ name');
 }
 
 my $test_accessors = {
@@ -73,28 +69,28 @@ for my $name (sort keys %$test_accessors) {
     my $field = $test_accessors->{$name}{custom_field} || $name;
     my $extra = $test_accessors->{$name}{has_extra};
 
-    can_ok($class, $name, $alias);
-    ok(!$class->can($field))
+    can_ok($obj, $name, $alias);
+    ok(!$obj->can($field))
       if $field ne $name;
 
-    is($class->$name, undef);
-    is($class->$alias, undef);
+    is($obj->$name, undef);
+    is($obj->$alias, undef);
 
     # get/set via name
-    is($class->$name('a'), 'a');
-    is($class->$name, 'a');
-    is($class->{$field}, $extra ? 'a Extra tackled on' : 'a');
+    is($obj->$name('a'), 'a');
+    is($obj->$name, 'a');
+    is($obj->{$field}, $extra ? 'a Extra tackled on' : 'a');
 
     # alias gets same as name
-    is($class->$alias, 'a');
+    is($obj->$alias, 'a');
 
     # get/set via alias
-    is($class->$alias('b'), 'b');
-    is($class->$alias, 'b');
-    is($class->{$field}, $extra ? 'b Extra tackled on' : 'b');
+    is($obj->$alias('b'), 'b');
+    is($obj->$alias, 'b');
+    is($obj->{$field}, $extra ? 'b Extra tackled on' : 'b');
 
     # alias gets same as name
-    is($class->$name, 'b');
+    is($obj->$name, 'b');
 };
 
 # important
