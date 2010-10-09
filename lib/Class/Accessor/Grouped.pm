@@ -102,7 +102,11 @@ my $add_xs_accessor = sub {
             $current_class->can("set_$group") == $original_setter
         ) {
             # nothing has changed, might as well use the XS crefs
-            # (if one changes methods that far into runtime - look pieces!)
+            #
+            # note that by the time this code executes, we already have
+            # *objects* (since XSA works on 'simple' only by definition).
+            # If someone is mucking with the symbol table *after* there
+            # are some objects already - look! many, shiny pieces! :)
             $final_cref = $xs_cref;
         }
         else {
@@ -113,10 +117,14 @@ my $add_xs_accessor = sub {
             }
         }
 
+        # installing an XSA cref that was originally created on a class
+        # different than $current_class is perfectly safe as per
+        # C::XSA's author
         my $fq_meth = "${current_class}::${name}";
 
         no strict qw/refs/;
         no warnings qw/redefine/;
+
         *$fq_meth = Sub::Name::subname($fq_meth, $final_cref);
 
         goto $final_cref;
@@ -607,16 +615,26 @@ L<repository|http://search.cpan.org/dist/Class-Accessor-Grouped/>:
 
 =head2 Notes on Class::XSAccessor
 
+You can force (or disable) the use of L<Class::XSAccessor> before creating a
+particular C<simple> accessor by either manipulating the global variable
+C<$Class::Accessor::Grouped::USE_XS> to true or false (preferably with
+L<localization|perlfunc/local>, or you can do so before runtime via the
+C<CAG_USE_XS> environment variable.
+
+Since L<Class::XSAccessor> has no knowledge of L</get_simple> and
+L</set_simple> this module does its best to detect if you are overriding
+one of these methods and will fall back to using the perl version of the
+accessor in order to maintain consistency. However be aware that if you
+enable use of C<Class::XSAccessor> (automatically or explicitly), create
+an object, invoke a simple accessor on that object, and B<then> manipulate
+the symbol table to install a C<get/set_simple> override - you get to keep
+all the pieces.
+
 While L<Class::XSAccessor> works surprisingly well for the amount of black
 magic it tries to pull off, it's still black magic. At present (Sep 2010)
 the module is known to have problems on Windows under heavy thread-stress
 (e.g. Win32+Apache+mod_perl). Thus for the time being L<Class::XSAccessor>
 will not be used automatically if you are running under C<MSWin32>.
-
-You can force the use of L<Class::XSAccessor> before creating a particular
-C<simple> accessor by either manipulating the global variable
-C<$Class::Accessor::Grouped::USE_XS>, or you can do so before runtime via the
-C<CAG_USE_XS> environment variable.
 
 =head1 AUTHORS
 
