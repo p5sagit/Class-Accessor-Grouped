@@ -93,7 +93,7 @@ my $add_xs_accessor = sub {
 
     return sub {
         my $self = $_[0];
-        my $current_class = (ref $self) || $self;
+        my $current_class = Scalar::Util::blessed( $self ) || $self;
 
         my $final_cref;
         if (
@@ -112,8 +112,10 @@ my $add_xs_accessor = sub {
         else {
             $final_cref = $pp_cref;
             if ($USE_XS and ! $xsa_autodetected and ! $no_xsa_classes_warned->{$current_class}++) {
-                warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class'
-                  . " '$current_class' due to an overriden get_$group and/or set_$group\n";
+
+                # not using Carp since the line where this happens doesn't mean much
+                warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class '
+                   . "'$current_class' due to an overriden get_$group and/or set_$group\n";
             }
         }
 
@@ -130,6 +132,45 @@ my $add_xs_accessor = sub {
         goto $final_cref;
     };
 };
+
+my $install_group_accessors = sub {
+    my($self, $maker, $group, @fields) = @_;
+    my $class = Scalar::Util::blessed $self || $self;
+
+    no strict 'refs';
+    no warnings 'redefine';
+
+    # So we don't have to do lots of lookups inside the loop.
+    $maker = $self->can($maker) unless ref $maker eq 'CODE';
+
+    foreach (@fields) {
+        if( $_ eq 'DESTROY' ) {
+            Carp::carp("Having a data accessor named DESTROY in ".
+                       "'$class' is unwise.");
+        }
+
+        my ($name, $field) = (ref $_)
+            ? (@$_)
+            : ($_, $_)
+        ;
+
+        my $alias = "_${name}_accessor";
+
+        for my $meth ($name, $alias) {
+
+            # the maker may elect to not return anything, meaning it already
+            # installed the coderef for us
+            my $cref = $self->$maker($group, $field, $meth)
+                or next;
+
+            my $fq_meth = join('::', $class, $meth);
+
+            *$fq_meth = Sub::Name::subname($fq_meth, $cref);
+                #unless defined &{$class."\:\:$field"}
+        }
+    }
+};
+
 
 =head1 NAME
 
@@ -172,49 +213,8 @@ be of the form [ $accessor, $field ].
 sub mk_group_accessors {
   my ($self, $group, @fields) = @_;
 
-  $self->_mk_group_accessors('make_group_accessor', $group, @fields);
+  $self->$install_group_accessors('make_group_accessor', $group, @fields);
   return;
-}
-
-
-{
-    no strict 'refs';
-    no warnings 'redefine';
-
-    sub _mk_group_accessors {
-        my($self, $maker, $group, @fields) = @_;
-        my $class = Scalar::Util::blessed $self || $self;
-
-        # So we don't have to do lots of lookups inside the loop.
-        $maker = $self->can($maker) unless ref $maker;
-
-        foreach (@fields) {
-            if( $_ eq 'DESTROY' ) {
-                Carp::carp("Having a data accessor named DESTROY  in ".
-                             "'$class' is unwise.");
-            }
-
-            my ($name, $field) = (ref $_)
-                ? (@$_)
-                : ($_, $_)
-            ;
-
-            my $alias = "_${name}_accessor";
-
-            for my $meth ($name, $alias) {
-
-                # the maker may elect to not return anything, meaning it already
-                # installed the coderef for us
-                my $cref = $self->$maker($group, $field, $meth)
-                    or next;
-
-                my $fq_meth = join('::', $class, $meth);
-
-                *$fq_meth = Sub::Name::subname($fq_meth, $cref);
-                    #unless defined &{$class."\:\:$field"}
-            }
-        }
-    }
 }
 
 =head2 mk_group_ro_accessors
@@ -236,7 +236,7 @@ rather than setting the value.
 sub mk_group_ro_accessors {
     my($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_ro_accessor', $group, @fields);
+    $self->$install_group_accessors('make_group_ro_accessor', $group, @fields);
 }
 
 =head2 mk_group_wo_accessors
@@ -258,7 +258,7 @@ value rather than getting the value.
 sub mk_group_wo_accessors {
     my($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
+    $self->$install_group_accessors('make_group_wo_accessor', $group, @fields);
 }
 
 =head2 make_group_accessor
@@ -447,7 +447,7 @@ instances.
 sub get_inherited {
     my $class;
 
-    if ( ($class = ref $_[0]) && Scalar::Util::blessed $_[0]) {
+    if ( defined( $class = Scalar::Util::blessed $_[0] ) ) {
         if (Scalar::Util::reftype $_[0] eq 'HASH') {
           return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
         }
@@ -460,7 +460,7 @@ sub get_inherited {
     }
 
     no strict 'refs';
-    no warnings qw/uninitialized/;
+    no warnings 'uninitialized';
 
     my $cag_slot = '::__cag_'. $_[1];
     return ${$class.$cag_slot} if defined(${$class.$cag_slot});
@@ -500,7 +500,7 @@ hash-based object.
 =cut
 
 sub set_inherited {
-    if (Scalar::Util::blessed $_[0]) {
+    if (defined Scalar::Util::blessed $_[0]) {
         if (Scalar::Util::reftype $_[0] eq 'HASH') {
             return $_[0]->{$_[1]} = $_[2];
         } else {
