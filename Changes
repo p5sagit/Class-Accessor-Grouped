@@ -1,8 +1,12 @@
 Revision history for Class::Accessor::Grouped.
 
+
+0.09008 Sun Oct 11 07:41:56 2010
+    - Put back a private undocumented method that the DBIC-CDBI compat
+      layer relies on :(
     - Fix corner case segfaults with C::XSA and old 5.8 perls
 
-0.09007 Sat Oct  9 10:22:56 2010
+0.09007 Sat Oct  9 10:22:56 2010 (DELETED)
     - Fix corner case when get/set_simple overrides are circumvented
       iff Class::XSAccessor is present
 

@@ -6,7 +6,7 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09007';
+our $VERSION = '0.09008';
 $VERSION = eval $VERSION;
 
 # when changing minimum version don't forget to adjust L</PERFROMANCE> as well
