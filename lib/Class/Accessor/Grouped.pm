@@ -129,6 +129,10 @@ my $add_xs_accessor = sub {
 
         *$fq_meth = Sub::Name::subname($fq_meth, $final_cref);
 
+        # older perls segfault if the cref behind the goto throws
+        # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
+        return $final_cref->(@_) if ($] < 5.008009);
+
         goto $final_cref;
     };
 };

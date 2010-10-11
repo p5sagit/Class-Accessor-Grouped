@@ -1,5 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Fix corner case segfaults with C::XSA and old 5.8 perls
+
 0.09007 Sat Oct  9 10:22:56 2010
     - Fix corner case when get/set_simple overrides are circumvented
       iff Class::XSAccessor is present
