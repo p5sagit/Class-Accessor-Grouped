@@ -137,7 +137,11 @@ my $add_xs_accessor = sub {
     };
 };
 
-my $install_group_accessors = sub {
+# Yes this method is undocumented
+# Yes it should be a private coderef like the one above it
+# No we can't do that (yet) because the DBIC-CDBI compat layer overrides it
+# %$*@!?&!&#*$!!!
+sub _mk_group_accessors {
     my($self, $maker, $group, @fields) = @_;
     my $class = Scalar::Util::blessed $self || $self;
 
@@ -217,7 +221,7 @@ be of the form [ $accessor, $field ].
 sub mk_group_accessors {
   my ($self, $group, @fields) = @_;
 
-  $self->$install_group_accessors('make_group_accessor', $group, @fields);
+  $self->_mk_group_accessors('make_group_accessor', $group, @fields);
   return;
 }
 
@@ -240,7 +244,7 @@ rather than setting the value.
 sub mk_group_ro_accessors {
     my($self, $group, @fields) = @_;
 
-    $self->$install_group_accessors('make_group_ro_accessor', $group, @fields);
+    $self->_mk_group_accessors('make_group_ro_accessor', $group, @fields);
 }
 
 =head2 mk_group_wo_accessors
@@ -262,7 +266,7 @@ value rather than getting the value.
 sub mk_group_wo_accessors {
     my($self, $group, @fields) = @_;
 
-    $self->$install_group_accessors('make_group_wo_accessor', $group, @fields);
+    $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
 }
 
 =head2 make_group_accessor
