@@ -1,4 +1,4 @@
-use Test::More tests => 62;
+use Test::More tests => 98;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -24,12 +24,6 @@ use AccessorGroupsSubclass;
     my $name = 'multiple1';
     my $alias = "_${name}_accessor";
 
-    for my $meth ($name, $alias) {
-        my $cv = svref_2object( $obj->can($meth) );
-        is($cv->GV->NAME, $meth, "$meth accessor is named");
-        is($cv->GV->STASH->NAME, 'AccessorGroups', "$meth class correct");
-    }
-
     my $warned = 0;
     local $SIG{__WARN__} = sub {
         if  (shift =~ /DESTROY/i) {
@@ -43,7 +37,6 @@ use AccessorGroupsSubclass;
     $class->mk_group_accessors('warnings', 'DESTROY');
     ok($warned);
 };
-
 
 my $obj = AccessorGroupsSubclass->new;
 
@@ -64,7 +57,6 @@ my $test_accessors = {
     },
 };
 
-
 for my $name (sort keys %$test_accessors) {
     my $alias = "_${name}_accessor";
     my $field = $test_accessors->{$name}{custom_field} || $name;
@@ -73,6 +65,12 @@ for my $name (sort keys %$test_accessors) {
     can_ok($obj, $name, $alias);
     ok(!$obj->can($field))
       if $field ne $name;
+
+    for my $meth ($name, $alias) {
+        my $cv = svref_2object( $obj->can($meth) );
+        is($cv->GV->NAME, $meth, "$meth accessor is named");
+        is($cv->GV->STASH->NAME, 'AccessorGroups', "$meth class correct");
+    }
 
     is($obj->$name, undef);
     is($obj->$alias, undef);
@@ -92,6 +90,12 @@ for my $name (sort keys %$test_accessors) {
 
     # alias gets same as name
     is($obj->$name, 'b');
+
+    for my $meth ($name, $alias) {
+        my $cv = svref_2object( $obj->can($meth) );
+        is($cv->GV->NAME, $meth, "$meth accessor is named after operations");
+        is($cv->GV->STASH->NAME, 'AccessorGroups', "$meth class correct after operations");
+    }
 };
 
 # important

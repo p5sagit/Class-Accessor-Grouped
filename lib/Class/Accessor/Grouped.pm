@@ -4,13 +4,16 @@ use warnings;
 use Carp ();
 use Scalar::Util ();
 use MRO::Compat;
-use Sub::Name ();
 
 our $VERSION = '0.09008';
 $VERSION = eval $VERSION;
 
-# when changing minimum version don't forget to adjust L</PERFROMANCE> as well
-our $__minimum_xsa_version = '1.06';
+# when changing minimum version don't forget to adjust L</PERFORMANCE> and
+# the Makefile.PL as well
+our $__minimum_xsa_version;
+BEGIN {
+    $__minimum_xsa_version = '1.06';
+}
 
 our $USE_XS;
 # the unless defined is here so that we can override the value
@@ -18,127 +21,8 @@ our $USE_XS;
 $USE_XS = $ENV{CAG_USE_XS}
     unless defined $USE_XS;
 
-my ($xsa_loaded, $xsa_autodetected);
-
-my $load_xsa = sub {
-    return if $xsa_loaded++;
-    require Class::XSAccessor;
-    Class::XSAccessor->VERSION($__minimum_xsa_version);
-};
-
-my $use_xs = sub {
-    if (defined $USE_XS) {
-        $load_xsa->() if ($USE_XS && ! $xsa_loaded);
-        return $USE_XS;
-    }
-
-    $xsa_autodetected = 1;
-    $USE_XS = 0;
-
-    # Class::XSAccessor is segfaulting on win32, in some
-    # esoteric heavily-threaded scenarios
-    # Win32 users can set $USE_XS/CAG_USE_XS to try to use it anyway
-    if ($^O ne 'MSWin32') {
-        local $@;
-        eval { $load_xsa->(); $USE_XS = 1 };
-    }
-
-    return $USE_XS;
-};
-
-my $maker_type_map = {
-  rw => {
-    xsa => 'accessors',
-    cag => 'make_group_accessor',
-  },
-  ro => {
-    xsa => 'getters',
-    cag => 'make_group_ro_accessor',
-  },
-  wo => {
-    xsa => 'setters',
-    cag => 'make_group_wo_accessor',
-  },
-};
-
-# When installing an XSA simple accessor, we need to make sure we are not
-# short-circuiting a (compile or runtime) get_simple/set_simple override.
-# What we do here is install a lazy first-access check, which will decide
-# the ultimate coderef being placed in the accessor slot
-
-my $no_xsa_classes_warned;
-my $add_xs_accessor = sub {
-    my ($class, $group, $field, $name, $type) = @_;
-
-    Class::XSAccessor->import({
-        replace => 1,
-        class => $class,
-        $maker_type_map->{$type}{xsa} => {
-            $name => $field,
-        },
-    });
-
-    my $xs_cref = $class->can($name);
-
-    my $pp_cref = do {
-        my $cag_method = $maker_type_map->{$type}{cag};
-        local $USE_XS = 0;
-        $class->$cag_method ($group, $field, $name, $type);
-    };
-
-    # can't use pkg_gen to track this stuff, as it doesn't
-    # detect superclass mucking
-    my $original_getter = __PACKAGE__->can ("get_$group");
-    my $original_setter = __PACKAGE__->can ("set_$group");
-
-    return sub {
-        my $self = $_[0];
-        my $current_class = Scalar::Util::blessed( $self ) || $self;
-
-        my $final_cref;
-        if (
-            $current_class->can("get_$group") == $original_getter
-                &&
-            $current_class->can("set_$group") == $original_setter
-        ) {
-            # nothing has changed, might as well use the XS crefs
-            #
-            # note that by the time this code executes, we already have
-            # *objects* (since XSA works on 'simple' only by definition).
-            # If someone is mucking with the symbol table *after* there
-            # are some objects already - look! many, shiny pieces! :)
-            $final_cref = $xs_cref;
-        }
-        else {
-            $final_cref = $pp_cref;
-            if ($USE_XS and ! $xsa_autodetected and ! $no_xsa_classes_warned->{$current_class}++) {
-
-                # not using Carp since the line where this happens doesn't mean much
-                warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class '
-                   . "'$current_class' due to an overriden get_$group and/or set_$group\n";
-            }
-        }
-
-        # installing an XSA cref that was originally created on a class
-        # different than $current_class is perfectly safe as per
-        # C::XSA's author
-        my $fq_meth = "${current_class}::${name}";
-
-        no strict qw/refs/;
-        no warnings qw/redefine/;
-
-        *$fq_meth = Sub::Name::subname($fq_meth, $final_cref);
-
-        # older perls segfault if the cref behind the goto throws
-        # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
-        return $final_cref->(@_) if ($] < 5.008009);
-
-        goto $final_cref;
-    };
-};
-
 # Yes this method is undocumented
-# Yes it should be a private coderef like the one above it
+# Yes it should be a private coderef like all the rest at the end of this file
 # No we can't do that (yet) because the DBIC-CDBI compat layer overrides it
 # %$*@!?&!&#*$!!!
 sub _mk_group_accessors {
@@ -149,7 +33,7 @@ sub _mk_group_accessors {
     no warnings 'redefine';
 
     # So we don't have to do lots of lookups inside the loop.
-    $maker = $self->can($maker) unless ref $maker eq 'CODE';
+    $maker = $self->can($maker) unless ref $maker;
 
     foreach (@fields) {
         if( $_ eq 'DESTROY' ) {
@@ -167,11 +51,11 @@ sub _mk_group_accessors {
         for my $meth ($name, $alias) {
 
             # the maker may elect to not return anything, meaning it already
-            # installed the coderef for us
+            # installed the coderef for us (e.g. lack of Sub::Name)
             my $cref = $self->$maker($group, $field, $meth)
                 or next;
 
-            my $fq_meth = join('::', $class, $meth);
+            my $fq_meth = "${class}::${meth}";
 
             *$fq_meth = Sub::Name::subname($fq_meth, $cref);
                 #unless defined &{$class."\:\:$field"}
@@ -179,6 +63,8 @@ sub _mk_group_accessors {
     }
 };
 
+# coderef is setup at the end for clarity
+my $gen_accessor;
 
 =head1 NAME
 
@@ -219,10 +105,10 @@ be of the form [ $accessor, $field ].
 =cut
 
 sub mk_group_accessors {
-  my ($self, $group, @fields) = @_;
+    my ($self, $group, @fields) = @_;
 
-  $self->_mk_group_accessors('make_group_accessor', $group, @fields);
-  return;
+    $self->_mk_group_accessors('make_group_accessor', $group, @fields);
+    return;
 }
 
 =head2 mk_group_ro_accessors
@@ -285,31 +171,7 @@ C<undef> if it elects to install the coderef on its own.
 
 =cut
 
-sub make_group_accessor {
-    my ($class, $group, $field, $name) = @_;
-
-    if ( $group eq 'simple' && $use_xs->() ) {
-        return $add_xs_accessor->(@_, 'rw');
-    }
-
-    my $set = "set_$group";
-    my $get = "get_$group";
-
-    $field =~ s/'/\\'/g;
-
-    # eval for faster fastiness
-    my $code = eval "sub {
-        if(\@_ > 1) {
-            return shift->$set('$field', \@_);
-        }
-        else {
-            return shift->$get('$field');
-        }
-    };";
-    Carp::croak $@ if $@;
-
-    return $code;
-}
+sub make_group_accessor { $gen_accessor->('rw', @_) }
 
 =head2 make_group_ro_accessor
 
@@ -327,31 +189,7 @@ C<undef> if it elects to install the coderef on its own.
 
 =cut
 
-sub make_group_ro_accessor {
-    my($class, $group, $field, $name) = @_;
-
-    if ( $group eq 'simple' && $use_xs->() ) {
-        return $add_xs_accessor->(@_, 'ro');
-    }
-
-    my $get = "get_$group";
-
-    $field =~ s/'/\\'/g;
-
-    my $code = eval "sub {
-        if(\@_ > 1) {
-            my \$caller = caller;
-            Carp::croak(\"'\$caller' cannot alter the value of '$field' on \".
-                        \"objects of class '$class'\");
-        }
-        else {
-            return shift->$get('$field');
-        }
-    };";
-    Carp::croak $@ if $@;
-
-    return $code;
-}
+sub make_group_ro_accessor { $gen_accessor->('ro', @_) }
 
 =head2 make_group_wo_accessor
 
@@ -369,31 +207,7 @@ C<undef> if it elects to install the coderef on its own.
 
 =cut
 
-sub make_group_wo_accessor {
-    my($class, $group, $field, $name) = @_;
-
-    if ( $group eq 'simple' && $use_xs->() ) {
-        return $add_xs_accessor->(@_, 'wo')
-    }
-
-    my $set = "set_$group";
-
-    $field =~ s/'/\\'/g;
-
-    my $code = eval "sub {
-        unless (\@_ > 1) {
-            my \$caller = caller;
-            Carp::croak(\"'\$caller' cannot access the value of '$field' on \".
-                        \"objects of class '$class'\");
-        }
-        else {
-            return shift->$set('$field', \@_);
-        }
-    };";
-    Carp::croak $@ if $@;
-
-    return $code;
-}
+sub make_group_wo_accessor { $gen_accessor->('wo', @_) }
 
 =head2 get_simple
 
@@ -411,7 +225,7 @@ name passed as an argument.
 =cut
 
 sub get_simple {
-  return $_[0]->{$_[1]};
+    return $_[0]->{$_[1]};
 }
 
 =head2 set_simple
@@ -430,7 +244,7 @@ for the field name passed as an argument.
 =cut
 
 sub set_simple {
-  return $_[0]->{$_[1]} = $_[2];
+    return $_[0]->{$_[1]} = $_[2];
 }
 
 
@@ -571,7 +385,7 @@ sub set_component_class {
         local $^W = 0;
         require Class::Inspector;
         if (Class::Inspector->installed($_[2]) && !Class::Inspector->loaded($_[2])) {
-            eval "use $_[2]";
+            eval "require $_[2]";
 
             Carp::croak("Could not load $_[1] '$_[2]': ", $@) if $@;
         };
@@ -589,8 +403,6 @@ Returns a list of 'parent' or 'super' class names that the current class inherit
 sub get_super_paths {
     return @{mro::get_linear_isa( ref($_[0]) || $_[0] )};
 };
-
-1;
 
 =head1 PERFORMANCE
 
@@ -669,3 +481,211 @@ This program is free software; you can redistribute it and/or modify
 it under the same terms as perl itself.
 
 =cut
+
+########################################################################
+########################################################################
+########################################################################
+#
+# Here be many angry dragons
+# (all code is in private coderefs since everything inherits CAG)
+#
+########################################################################
+########################################################################
+
+BEGIN {
+
+  die "Huh?! No minimum C::XSA version?!\n"
+    unless $__minimum_xsa_version;
+
+  local $@;
+  my $err;
+
+  $err = eval { require Sub::Name; 1; } ? undef : do {
+    delete $INC{'Sub/Name.pm'};   # because older perls suck
+    $@;
+  };
+  *__CAG_NO_SUBNAME = $err
+    ? sub () { $err }
+    : sub () { 0 }
+  ;
+
+
+  $err = eval {
+    require Class::XSAccessor;
+    Class::XSAccessor->VERSION($__minimum_xsa_version);
+    require Sub::Name;
+    1;
+  } ? undef : do {
+    delete $INC{'Sub/Name.pm'};   # because older perls suck
+    delete $INC{'Class/XSAccessor.pm'};
+    $@;
+  };
+  *__CAG_NO_CXSA = $err
+    ? sub () { $err }
+    : sub () { 0 }
+  ;
+
+
+  *__CAG_BROKEN_GOTO = ($] < '5.008009')
+    ? sub () { 1 }
+    : sub () { 0 }
+  ;
+
+};
+
+# Autodetect unless flag supplied
+# Class::XSAccessor is segfaulting on win32, in some
+# esoteric heavily-threaded scenarios
+# Win32 users can set $USE_XS/CAG_USE_XS to try to use it anyway
+my $xsa_autodetected;
+if (! defined $USE_XS) {
+  $USE_XS = (!__CAG_NO_CXSA and $^O ne 'MSWin32') ? 1 : 0;
+  $xsa_autodetected++;
+}
+
+my $maker_templates = {
+  rw => {
+    xs_call => 'accessors',
+    pp_code => sub {
+      my $set = "set_$_[1]";
+      my $get = "get_$_[1]";
+      my $field = $_[2];
+      $field =~ s/'/\\'/g;
+
+      "
+        \@_ > 1
+          ? shift->$set('$field', \@_)
+          : shift->$get('$field')
+      "
+    },
+  },
+  ro => {
+    xs_call => 'getters',
+    pp_code => sub {
+      my $get = "get_$_[1]";
+      my $field = $_[2];
+      $field =~ s/'/\\'/g;
+
+      "
+        \@_ == 1
+          ? shift->$get('$field')
+          : do {
+            my \$caller = caller;
+            Carp::croak(\"'\$caller' cannot alter the value of '$field' on \".
+                        \"objects of class '$_[0]'\");
+          }
+      "
+    },
+  },
+  wo => {
+    xs_call => 'setters',
+    pp_code => sub {
+      my $set = "set_$_[1]";
+      my $field = $_[2];
+      $field =~ s/'/\\'/g;
+
+      "
+        \@_ > 1
+          ? shift->$set('$field', \@_)
+          : do {
+            my \$caller = caller;
+            Carp::croak(\"'\$caller' cannot access the value of '$field' on \".
+                        \"objects of class '$_[0]'\");
+          }
+      "
+    },
+  },
+};
+
+
+my ($accessor_maker_cache, $no_xsa_warned_classes);
+
+# can't use pkg_gen to track this stuff, as it doesn't
+# detect superclass mucking
+my $original_simple_getter = __PACKAGE__->can ('get_simple');
+my $original_simple_setter = __PACKAGE__->can ('set_simple');
+
+# Note!!! Unusual signature
+$gen_accessor = sub {
+  my ($type, $class, $group, $field, $methname) = @_;
+  if (my $c = ref $class) {
+    $class = $c;
+  }
+
+  # When installing an XSA simple accessor, we need to make sure we are not
+  # short-circuiting a (compile or runtime) get_simple/set_simple override.
+  # What we do here is install a lazy first-access check, which will decide
+  # the ultimate coderef being placed in the accessor slot
+  if ($USE_XS and $group eq 'simple') {
+    my $fq_name = "${class}::${methname}";
+    ($accessor_maker_cache->{xs}{$field}{$type}{$fq_name} ||= do {
+      die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
+        if __CAG_NO_CXSA;
+
+      sub { sub {
+        my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
+
+        if (
+          $current_class->can('get_simple') == $original_simple_getter
+            &&
+          $current_class->can('set_simple') == $original_simple_setter
+        ) {
+          # nothing has changed, might as well use the XS crefs
+          #
+          # note that by the time this code executes, we already have
+          # *objects* (since XSA works on 'simple' only by definition).
+          # If someone is mucking with the symbol table *after* there
+          # are some objects already - look! many, shiny pieces! :)
+          Class::XSAccessor->import(
+            replace => 1,
+            class => $class,
+            $maker_templates->{$type}{xs_call} => {
+              $methname => $field,
+            },
+          );
+        }
+        else {
+          if (! $xsa_autodetected and ! $no_xsa_warned_classes->{$current_class}++) {
+            # not using Carp since the line where this happens doesn't mean much
+            warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class '
+              . "'$current_class' due to an overriden get_simple and/or set_simple\n";
+          }
+
+          no strict qw/refs/;
+
+          *$fq_name = Sub::Name::subname($fq_name, do {
+            # that's faster than local
+            $USE_XS = 0;
+            my $c = $gen_accessor->($type, $class, 'simple', $field, $methname);
+            $USE_XS = 1;
+            $c;
+          });
+        }
+
+        # older perls segfault if the cref behind the goto throws
+        # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
+        return $current_class->can($methname)->(@_) if __CAG_BROKEN_GOTO;
+
+        goto $current_class->can($methname);
+      }}
+    })->();
+  }
+
+  # no Sub::Name - just install the coderefs directly (compiling every time)
+  elsif (__CAG_NO_SUBNAME) {
+    my $pp_code = $maker_templates->{$type}{pp_code}->($class, $group, $field);
+    eval "sub ${class}::${methname} { $pp_code }; 1" or die $@;
+    undef;  # so that no attempt will be made to install anything
+  }
+
+  # a coderef generator with a variable pad (returns a fresh cref on every invocation)
+  # also since it is much simpler than the xs one it needs less cache-keys
+  else {
+    ($accessor_maker_cache->{pp}{$field}{$type} ||= do {
+      my $pp_code = $maker_templates->{$type}{pp_code}->($class, $group, $field);
+      eval "sub { my \$dummy; sub { \$dummy if 0; $pp_code } }" or die $@;
+    })->()
+  }
+};
+
+1;
