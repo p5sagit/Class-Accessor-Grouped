@@ -531,6 +531,12 @@ BEGIN {
     : sub () { 0 }
   ;
 
+
+  *__CAG_UNSTABLE_DOLLARAT = ($] < '5.013002')
+    ? sub () { 1 }
+    : sub () { 0 }
+  ;
+
 };
 
 # Autodetect unless flag supplied
@@ -614,12 +620,13 @@ $gen_accessor = sub {
     $class = $c;
   }
 
+  my $fq_name = "${class}::${methname}";
+
   # When installing an XSA simple accessor, we need to make sure we are not
   # short-circuiting a (compile or runtime) get_simple/set_simple override.
   # What we do here is install a lazy first-access check, which will decide
   # the ultimate coderef being placed in the accessor slot
   if ($USE_XS and $group eq 'simple') {
-    my $fq_name = "${class}::${methname}";
     ($accessor_maker_cache->{xs}{$field}{$type}{$fq_name} ||= do {
       die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
         if __CAG_NO_CXSA;
@@ -675,16 +682,23 @@ $gen_accessor = sub {
 
   # no Sub::Name - just install the coderefs directly (compiling every time)
   elsif (__CAG_NO_SUBNAME) {
-    my $pp_code = $maker_templates->{$type}{pp_code}->($group, $field);
-    eval "sub ${class}::${methname} { $pp_code }; 1" or die $@;
+    my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
+      $maker_templates->{$type}{pp_code}->($group, $field);
+
+    local $@ if __CAG_UNSTABLE_DOLLARAT;
+    eval "sub ${fq_name}{$src}";
+
     undef;  # so that no attempt will be made to install anything
   }
 
   # a coderef generator with a variable pad (returns a fresh cref on every invocation)
   else {
     ($accessor_maker_cache->{pp}{$group}{$field}{$type} ||= do {
-      my $pp_code = $maker_templates->{$type}{pp_code}->($group, $field);
-      eval "sub { my \$dummy; sub { \$dummy if 0; $pp_code } }" or die $@;
+      my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
+        $maker_templates->{$type}{pp_code}->($group, $field);
+
+      local $@ if __CAG_UNSTABLE_DOLLARAT;
+      eval "sub { my \$dummy; sub { \$dummy if 0; $src } }" or die $@;
     })->()
   }
 };
