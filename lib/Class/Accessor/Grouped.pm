@@ -547,9 +547,9 @@ my $maker_templates = {
   rw => {
     xs_call => 'accessors',
     pp_code => sub {
-      my $set = "set_$_[1]";
-      my $get = "get_$_[1]";
-      my $field = $_[2];
+      my $set = "set_$_[0]";
+      my $get = "get_$_[0]";
+      my $field = $_[1];
       $field =~ s/'/\\'/g;
 
       "
@@ -562,8 +562,8 @@ my $maker_templates = {
   ro => {
     xs_call => 'getters',
     pp_code => sub {
-      my $get = "get_$_[1]";
-      my $field = $_[2];
+      my $get = "get_$_[0]";
+      my $field = $_[1];
       $field =~ s/'/\\'/g;
 
       "
@@ -571,8 +571,9 @@ my $maker_templates = {
           ? shift->$get('$field')
           : do {
             my \$caller = caller;
-            Carp::croak(\"'\$caller' cannot alter the value of '$field' on \".
-                        \"objects of class '$_[0]'\");
+            my \$class = ref \$_[0] || \$_[0];
+            Carp::croak(\"'\$caller' cannot alter the value of '$field' \".
+                        \"(read-only attributes of class '\$class')\");
           }
       "
     },
@@ -580,8 +581,8 @@ my $maker_templates = {
   wo => {
     xs_call => 'setters',
     pp_code => sub {
-      my $set = "set_$_[1]";
-      my $field = $_[2];
+      my $set = "set_$_[0]";
+      my $field = $_[1];
       $field =~ s/'/\\'/g;
 
       "
@@ -589,8 +590,9 @@ my $maker_templates = {
           ? shift->$set('$field', \@_)
           : do {
             my \$caller = caller;
-            Carp::croak(\"'\$caller' cannot access the value of '$field' on \".
-                        \"objects of class '$_[0]'\");
+            my \$class = ref \$_[0] || \$_[0];
+            Carp::croak(\"'\$caller' cannot access the value of '$field' \".
+                        \"(write-only attributes of class '\$class')\");
           }
       "
     },
@@ -673,16 +675,15 @@ $gen_accessor = sub {
 
   # no Sub::Name - just install the coderefs directly (compiling every time)
   elsif (__CAG_NO_SUBNAME) {
-    my $pp_code = $maker_templates->{$type}{pp_code}->($class, $group, $field);
+    my $pp_code = $maker_templates->{$type}{pp_code}->($group, $field);
     eval "sub ${class}::${methname} { $pp_code }; 1" or die $@;
     undef;  # so that no attempt will be made to install anything
   }
 
   # a coderef generator with a variable pad (returns a fresh cref on every invocation)
-  # also since it is much simpler than the xs one it needs less cache-keys
   else {
-    ($accessor_maker_cache->{pp}{$field}{$type} ||= do {
-      my $pp_code = $maker_templates->{$type}{pp_code}->($class, $group, $field);
+    ($accessor_maker_cache->{pp}{$group}{$field}{$type} ||= do {
+      my $pp_code = $maker_templates->{$type}{pp_code}->($group, $field);
       eval "sub { my \$dummy; sub { \$dummy if 0; $pp_code } }" or die $@;
     })->()
   }
