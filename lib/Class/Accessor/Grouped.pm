@@ -500,6 +500,7 @@ BEGIN {
   local $@;
   my $err;
 
+
   $err = eval { require Sub::Name; 1; } ? undef : do {
     delete $INC{'Sub/Name.pm'};   # because older perls suck
     $@;
@@ -685,6 +686,7 @@ $gen_accessor = sub {
     my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
       $maker_templates->{$type}{pp_code}->($group, $field);
 
+    no warnings 'redefine';
     local $@ if __CAG_UNSTABLE_DOLLARAT;
     eval "sub ${fq_name}{$src}";
 

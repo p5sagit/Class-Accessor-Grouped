@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Major cleanup and optimization of code (evaled coderef sharing)
+    - Module can now operate in PurePerl environments with 100%
+      compatibility (including proper naming of generated coderefs)
 
 0.09008 Sun Oct 11 07:41:56 2010
     - Put back a private undocumented method that the DBIC-CDBI compat
