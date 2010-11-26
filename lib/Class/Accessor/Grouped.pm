@@ -5,7 +5,7 @@ use Carp ();
 use Scalar::Util ();
 use MRO::Compat;
 
-our $VERSION = '0.09008';
+our $VERSION = '0.09009';
 $VERSION = eval $VERSION;
 
 # when changing minimum version don't forget to adjust L</PERFORMANCE> and
