@@ -537,8 +537,7 @@ BEGIN {
     ? sub () { 1 }
     : sub () { 0 }
   ;
-
-};
+}
 
 # Autodetect unless flag supplied
 # Class::XSAccessor is segfaulting on win32, in some
@@ -621,65 +620,67 @@ $gen_accessor = sub {
     $class = $c;
   }
 
-
   # When installing an XSA simple accessor, we need to make sure we are not
   # short-circuiting a (compile or runtime) get_simple/set_simple override.
   # What we do here is install a lazy first-access check, which will decide
   # the ultimate coderef being placed in the accessor slot
+  #
+  # Also note that the *original* class will always retain this shim, as
+  # different branches inheriting from it may have different overrides.
+  # Thus the final method (properly labeled and all) is installed in the
+  # calling-package's namespace
   if ($USE_XS and $group eq 'simple') {
-    my $fq_name = "${class}::${methname}";
-    ($accessor_maker_cache->{xs}{$field}{$type}{$fq_name} ||= do {
-      die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
-        if __CAG_NO_CXSA;
+    die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
+      if __CAG_NO_CXSA;
 
+    return sub {
+      my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
 
-      sub { sub {
-        my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
-
-        if (
-          $current_class->can('get_simple') == $original_simple_getter
-            &&
-          $current_class->can('set_simple') == $original_simple_setter
-        ) {
-          # nothing has changed, might as well use the XS crefs
-          #
-          # note that by the time this code executes, we already have
-          # *objects* (since XSA works on 'simple' only by definition).
-          # If someone is mucking with the symbol table *after* there
-          # are some objects already - look! many, shiny pieces! :)
-          Class::XSAccessor->import(
-            replace => 1,
-            class => $class,
-            $maker_templates->{$type}{xs_call} => {
-              $methname => $field,
-            },
-          );
-        }
-        else {
-          if (! $xsa_autodetected and ! $no_xsa_warned_classes->{$current_class}++) {
-            # not using Carp since the line where this happens doesn't mean much
-            warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class '
-              . "'$current_class' due to an overriden get_simple and/or set_simple\n";
-          }
-
-          no strict qw/refs/;
-
-          *$fq_name = Sub::Name::subname($fq_name, do {
-            # that's faster than local
-            $USE_XS = 0;
-            my $c = $gen_accessor->($type, $class, 'simple', $field, $methname);
-            $USE_XS = 1;
-            $c;
-          });
+      if (
+        $current_class->can('get_simple') == $original_simple_getter
+          &&
+        $current_class->can('set_simple') == $original_simple_setter
+      ) {
+        # nothing has changed, might as well use the XS crefs
+        #
+        # note that by the time this code executes, we already have
+        # *objects* (since XSA works on 'simple' only by definition).
+        # If someone is mucking with the symbol table *after* there
+        # are some objects already - look! many, shiny pieces! :)
+        Class::XSAccessor->import(
+          replace => 1,
+          class => $current_class,
+          $maker_templates->{$type}{xs_call} => {
+            $methname => $field,
+          },
+        );
+      }
+      else {
+        if (! $xsa_autodetected and ! $no_xsa_warned_classes->{$current_class}++) {
+          # not using Carp since the line where this happens doesn't mean much
+          warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class '
+            . "'$current_class' inheriting from '$class' due to an overriden get_simple and/or "
+            . "set_simple\n";
         }
 
-        # older perls segfault if the cref behind the goto throws
-        # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
-        return $current_class->can($methname)->(@_) if __CAG_BROKEN_GOTO;
+        no strict qw/refs/;
 
-        goto $current_class->can($methname);
-      }}
-    })->();
+        my $fq_name = "${current_class}::${methname}";
+        *$fq_name = Sub::Name::subname($fq_name, do {
+          # that's faster than local
+          $USE_XS = 0;
+          my $c = $gen_accessor->($type, $class, 'simple', $field, $methname);
+          $USE_XS = 1;
+          $c;
+        });
+      }
+
+      # older perls segfault if the cref behind the goto throws
+      # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
+      return $current_class->can($methname)->(@_) if __CAG_BROKEN_GOTO;
+
+      goto $current_class->can($methname);
+    };
   }
 
   # no Sub::Name - just install the coderefs directly (compiling every time)

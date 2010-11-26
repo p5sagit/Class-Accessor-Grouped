@@ -94,7 +94,12 @@ for my $name (sort keys %$test_accessors) {
     for my $meth ($name, $alias) {
         my $cv = svref_2object( $obj->can($meth) );
         is($cv->GV->NAME, $meth, "$meth accessor is named after operations");
-        is($cv->GV->STASH->NAME, 'AccessorGroups', "$meth class correct after operations");
+        is(
+          $cv->GV->STASH->NAME,
+          # XS lazyinstalls install into each caller, not into the original parent
+          $test_accessors->{$name}{is_xs} ? 'AccessorGroupsSubclass' :'AccessorGroups',
+          "$meth class correct after operations",
+        );
     }
 };
 

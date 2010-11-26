@@ -24,10 +24,16 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
   subtest "$tname with USE_XS (pass $_)" => sub {
     my $tfn = catfile($Bin, $tname);
 
-    delete $INC{$_} for (
+    for (
       qw/AccessorGroups.pm AccessorGroupsRO.pm AccessorGroupsSubclass.pm AccessorGroupsWO.pm/,
       File::Spec::Unix->catfile ($tfn),
-    );
+    ) {
+      delete $INC{$_};
+      no strict 'refs';
+      if (my ($mod) = $_ =~ /(.+)\.pm$/ ) {
+        %{"${mod}::"} = ();
+      }
+    }
 
     local $SIG{__WARN__} = sub { warn @_ unless $_[0] =~ /subroutine .+ redefined/i };
 
