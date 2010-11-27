@@ -625,7 +625,7 @@ my $original_simple_setter = __PACKAGE__->can ('set_simple');
 # Note!!! Unusual signature
 $gen_accessor = sub {
   my ($type, $class, $group, $field, $methname) = @_;
-  if (my $c = ref $class) {
+  if (my $c = Scalar::Util::blessed( $class )) {
     $class = $c;
   }
 
@@ -649,17 +649,17 @@ $gen_accessor = sub {
 
       if (__CAG_TRACK_UNDEFER_FAIL) {
         my @cframe = caller(0);
-        if ($deferred_calls_seen{$cframe[3]}) {
+        if ($deferred_calls_seen{$current_class}{$cframe[3]}) {
           Carp::carp (
             "Deferred version of method $cframe[3] invoked more than once (originally "
-          . "invoked at $deferred_calls_seen{$cframe[3]}). This is a strong "
+          . "invoked at $deferred_calls_seen{$current_class}{$cframe[3]}). This is a strong "
           . 'indication your code has cached the original ->can derived method coderef, '
           . 'and is using it instead of the proper method re-lookup, causing performance '
           . 'regressions'
           );
         }
         else {
-          $deferred_calls_seen{$cframe[3]} = "$cframe[1] line $cframe[2]";
+          $deferred_calls_seen{$current_class}{$cframe[3]} = "$cframe[1] line $cframe[2]";
         }
       }
 

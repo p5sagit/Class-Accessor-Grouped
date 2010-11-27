@@ -21,6 +21,7 @@ use AccessorGroupsSubclass;
 $Class::Accessor::Grouped::USE_XS = 1;
 
 my $obj = AccessorGroupsSubclass->new;
+my $obj2 = AccessorGroups->new;
 my $deferred_stub = AccessorGroupsSubclass->can('singlefield');
 
 my @w;
@@ -30,7 +31,12 @@ my @w;
   is ($obj->$deferred_stub, 1, 'Get');
   is ($obj->$deferred_stub(2), 2, 'ReSet');
   is ($obj->$deferred_stub, 2, 'ReGet');
+
+  is ($obj->singlefield, 2, 'Normal get');
+  is ($obj2->singlefield, undef, 'Normal get on unrelated object');
 }
+
+is (@w, 3, '3 warnings total');
 
 is (
   scalar (grep { $_ =~ /^\QDeferred version of method AccessorGroups::singlefield invoked more than once/ } @w),
