@@ -417,18 +417,22 @@ available on your system.
 
 This is the result of a set/get/set loop benchmark on perl 5.12.1 with
 thread support, showcasing most popular accessor builders: L<Moose>, L<Mouse>,
-L<CAF|Class::Accessor::Fast>, L<CAF_XS|Class::Accessor::Fast::XS>
-and L<XSA|Class::XSAccessor>:
+L<Moo>, L<CAF|Class::Accessor::Fast>, L<CAF_XS|Class::Accessor::Fast::XS>,
+L<XSA|Class::XSAccessor>, and L<CAF_XSA|Class::XSAccessor::Compat>:
 
-            Rate     CAG   moOse     CAF HANDMADE  CAF_XS moUse_XS CAG_XS     XSA
- CAG      1777/s      --    -27%    -29%     -36%    -62%     -67%   -72%    -73%
- moOse    2421/s     36%      --     -4%     -13%    -48%     -55%   -61%    -63%
- CAF      2511/s     41%      4%      --     -10%    -47%     -53%   -60%    -61%
- HANDMADE 2791/s     57%     15%     11%       --    -41%     -48%   -56%    -57%
- CAF_XS   4699/s    164%     94%     87%      68%      --     -13%   -25%    -28%
- moUse_XS 5375/s    203%    122%    114%      93%     14%       --   -14%    -18%
- CAG_XS   6279/s    253%    159%    150%     125%     34%      17%     --     -4%
- XSA      6515/s    267%    169%    159%     133%     39%      21%     4%      --
+           Rate  CAG moOse  CAF moUse  moo HANDMADE CAF_XS moUse_XS moo_XS CAF_XSA  XSA CAG_XS
+ CAG      169/s   --  -21% -24%  -32% -32%     -34%   -59%     -63%   -67%    -67% -67%   -67%
+ moOse    215/s  27%    --  -3%  -13% -13%     -15%   -48%     -53%   -58%    -58% -58%   -58%
+ CAF      222/s  31%    3%   --  -10% -10%     -13%   -46%     -52%   -57%    -57% -57%   -57%
+ moUse    248/s  46%   15%  11%    --  -0%      -3%   -40%     -46%   -52%    -52% -52%   -52%
+ moo      248/s  46%   15%  11%    0%   --      -3%   -40%     -46%   -52%    -52% -52%   -52%
+ HANDMADE 255/s  50%   18%  14%    3%   3%       --   -38%     -45%   -50%    -51% -51%   -51%
+ CAF_XS   411/s 143%   91%  85%   66%  66%      61%     --     -11%   -20%    -20% -21%   -21%
+ moUse_XS 461/s 172%  114% 107%   86%  86%      81%    12%       --   -10%    -11% -11%   -11%
+ moo_XS   514/s 204%  139% 131%  107% 107%     102%    25%      12%     --     -0%  -1%    -1%
+ CAF_XSA  516/s 205%  140% 132%  108% 108%     103%    26%      12%     0%      --  -0%    -0%
+ XSA      519/s 206%  141% 133%  109% 109%     104%    26%      13%     1%      0%   --    -0%
+ CAG_XS   519/s 206%  141% 133%  109% 109%     104%    26%      13%     1%      0%   0%     --
 
 Benchmark program is available in the root of the
 L<repository|http://search.cpan.org/dist/Class-Accessor-Grouped/>:
@@ -568,7 +572,7 @@ my $maker_templates = {
       $field =~ s/'/\\'/g;
 
       "
-        \@_ > 1
+        \@_ != 1
           ? shift->$set('$field', \@_)
           : shift->$get('$field')
       "
@@ -601,7 +605,7 @@ my $maker_templates = {
       $field =~ s/'/\\'/g;
 
       "
-        \@_ > 1
+        \@_ != 1
           ? shift->$set('$field', \@_)
           : do {
             my \$caller = caller;

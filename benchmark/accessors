@@ -10,6 +10,8 @@ BEGIN {
     Class::XSAccessor::Compat
     Moose
     Mouse
+    Mousse
+    Moo
   /) {
     eval "require $_" or push @missing, $_;
   }
@@ -73,7 +75,8 @@ sub _add_moose_task {
 package $gen_class;
 use $class;
 has $meth => (is => 'rw');
-__PACKAGE__->meta->make_immutable;
+# some moosey thingies can not do this
+eval { __PACKAGE__->meta->make_immutable };
 EOC
 
   $bench_objs->{$name} = $gen_class->new;
@@ -83,12 +86,15 @@ EOC
 sub _add_task {
   my ($tasks, $name, $meth, $slot) = @_;
 
-  $tasks->{$name} = eval "sub {
-    for (my \$i = 0; \$i < 100; \$i++) {
-      \$bench_objs->{$slot}->$meth(1);
-      \$bench_objs->{$slot}->$meth(\$bench_objs->{$slot}->$meth + 1);
-    }
-  }";
+  my $perl;
+  for (1 .. 1000) {
+    $perl .= "
+      \$bench_objs->{$slot}->$meth($_);
+      \$bench_objs->{$slot}->$meth(\$bench_objs->{$slot}->$meth + $_);
+    ";
+  }
+
+  $tasks->{$name} = eval "sub { $perl } ";
 }
 
 my $tasks = {
@@ -104,14 +110,21 @@ for (qw/CAG CAG_XS CAF CAF_XS CAF_XSA XSA HANDMADE/) {
 
 my $moose_based = {
   moOse => 'Moose',
-  ($ENV{MOUSE_PUREPERL} ? 'moUse' : 'moUse_XS') => 'Mouse',
+  moo_XS => 'Moo',
+  moUse_XS => 'Mouse',
+  moUse => 'Mousse',
 };
 for (keys %$moose_based) {
   _add_moose_task ($tasks, $_, $moose_based->{$_})
 }
 
+{
+  no warnings 'once';
+  local $Method::Generate::Accessor::CAN_HAZ_XS = 0;
+  _add_moose_task ($tasks, moo => 'Moo');
+}
 
-for (1, 2) {
+for (1 .. 5) {
   print "Perl $], take $_:\n";
   cmpthese ( -1, $tasks );
   print "\n";
