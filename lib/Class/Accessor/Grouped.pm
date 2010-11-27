@@ -537,6 +537,15 @@ BEGIN {
     ? sub () { 1 }
     : sub () { 0 }
   ;
+
+
+  *__CAG_TRACK_UNDEFER_FAIL = (
+    $INC{'Test/Builder.pm'} || $INC{'Test/Builder2.pm'}
+      and
+    $0 =~ m|^ x?t / .+ \.t $|x
+  ) ? sub () { 1 }
+    : sub () { 0 }
+  ;
 }
 
 # Autodetect unless flag supplied
@@ -633,8 +642,26 @@ $gen_accessor = sub {
     die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
       if __CAG_NO_CXSA;
 
+    my %deferred_calls_seen;
+
     return sub {
       my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
+
+      if (__CAG_TRACK_UNDEFER_FAIL) {
+        my @cframe = caller(0);
+        if ($deferred_calls_seen{$cframe[3]}) {
+          Carp::carp (
+            "Deferred version of method $cframe[3] invoked more than once (originally "
+          . "invoked at $deferred_calls_seen{$cframe[3]}). This is a strong "
+          . 'indication your code has cached the original ->can derived method coderef, '
+          . 'and is using it instead of the proper method re-lookup, causing performance '
+          . 'regressions'
+          );
+        }
+        else {
+          $deferred_calls_seen{$cframe[3]} = "$cframe[1] line $cframe[2]";
+        }
+      }
 
       if (
         $current_class->can('get_simple') == $original_simple_getter
@@ -663,7 +690,8 @@ $gen_accessor = sub {
             . "set_simple\n";
         }
 
-        no strict qw/refs/;
+        no strict 'refs';
+        no warnings 'redefine';
 
         my $fq_name = "${current_class}::${methname}";
         *$fq_name = Sub::Name::subname($fq_name, do {
@@ -692,12 +720,12 @@ $gen_accessor = sub {
     local $@ if __CAG_UNSTABLE_DOLLARAT;
     eval "sub ${class}::${methname}{$src}";
 
-    undef;  # so that no attempt will be made to install anything
+    undef;  # so that no further attempt will be made to install anything
   }
 
   # a coderef generator with a variable pad (returns a fresh cref on every invocation)
   else {
-    ($accessor_maker_cache->{pp}{$group}{$field}{$type} ||= do {
+    ($accessor_maker_cache->{pp}{$type}{$group}{$field} ||= do {
       my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
         $maker_templates->{$type}{pp_code}->($group, $field);
 
