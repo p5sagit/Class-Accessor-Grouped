@@ -1,7 +1,10 @@
 Revision history for Class::Accessor::Grouped.
 
+
+0.10000 Sat Nov 27 17:51:04 2010
     - Fix perl 5.6 failures
     - Add test-time deferred coderef reinvocation checks
+    - Another minor (8%) speedup
 
 0.09009 Fri Nov 26 01:31:56 2010
     - Major cleanup and optimization of code (evaled coderef sharing)

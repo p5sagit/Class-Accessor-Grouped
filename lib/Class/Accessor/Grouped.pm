@@ -5,8 +5,8 @@ use Carp ();
 use Scalar::Util ();
 use MRO::Compat;
 
-our $VERSION = '0.09009';
-$VERSION = eval $VERSION;
+our $VERSION = '0.10000';
+$VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust L</PERFORMANCE> and
 # the Makefile.PL as well
