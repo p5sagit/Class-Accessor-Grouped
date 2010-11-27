@@ -718,7 +718,7 @@ $gen_accessor = sub {
 
     no warnings 'redefine';
     local $@ if __CAG_UNSTABLE_DOLLARAT;
-    eval "sub ${class}::${methname}{$src}";
+    eval "sub ${class}::${methname} { $src }";
 
     undef;  # so that no further attempt will be made to install anything
   }
