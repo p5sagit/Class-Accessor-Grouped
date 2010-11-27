@@ -34,8 +34,8 @@ my @w;
 
 is (
   scalar (grep { $_ =~ /^\QDeferred version of method AccessorGroups::singlefield invoked more than once/ } @w),
-  3
-  '3 warnings produced as expected on cached invocation during testing'
+  3,
+  '3 warnings produced as expected on cached invocation during testing',
 );
 
 done_testing;
