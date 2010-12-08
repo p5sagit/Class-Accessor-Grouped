@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Fix spurious method re-invocation warnings after Class::Unload
 
 0.10000 Sat Nov 27 17:51:04 2010
     - Fix perl 5.6 failures

@@ -646,24 +646,25 @@ $gen_accessor = sub {
     die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
       if __CAG_NO_CXSA;
 
-    my %deferred_calls_seen;
-
     return sub {
       my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
 
       if (__CAG_TRACK_UNDEFER_FAIL) {
+        my $deferred_calls_seen = do {
+          no strict 'refs';
+          \%{"${current_class}::__cag_deferred_xs_shim_invocations"}
+        };
         my @cframe = caller(0);
-        if ($deferred_calls_seen{$current_class}{$cframe[3]}) {
+        if (my $already_seen = $deferred_calls_seen->{$cframe[3]}) {
           Carp::carp (
             "Deferred version of method $cframe[3] invoked more than once (originally "
-          . "invoked at $deferred_calls_seen{$current_class}{$cframe[3]}). This is a strong "
-          . 'indication your code has cached the original ->can derived method coderef, '
-          . 'and is using it instead of the proper method re-lookup, causing performance '
-          . 'regressions'
+          . "invoked at $already_seen). This is a strong indication your code has "
+          . 'cached the original ->can derived method coderef, and is using it instead '
+          . 'of the proper method re-lookup, causing performance regressions'
           );
         }
         else {
-          $deferred_calls_seen{$current_class}{$cframe[3]} = "$cframe[1] line $cframe[2]";
+          $deferred_calls_seen->{$cframe[3]} = "$cframe[1] line $cframe[2]";
         }
       }
 
