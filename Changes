@@ -1,5 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
+0.10001 Sun Dec 12 03:17:05 2010
+    - Fix an ActiveState Win32 incompatibility
     - Fix spurious method re-invocation warnings after Class::Unload
 
 0.10000 Sat Nov 27 17:51:04 2010

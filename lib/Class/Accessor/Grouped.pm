@@ -5,7 +5,7 @@ use Carp ();
 use Scalar::Util ();
 use MRO::Compat;
 
-our $VERSION = '0.10000';
+our $VERSION = '0.10001';
 $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust L</PERFORMANCE> and
