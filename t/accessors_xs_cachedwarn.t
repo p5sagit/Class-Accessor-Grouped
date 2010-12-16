@@ -1,8 +1,5 @@
 use strict;
 use warnings;
-use FindBin qw($Bin);
-use File::Spec::Functions;
-use File::Spec::Unix (); # need this for %INC munging
 use Test::More;
 use lib 't/lib';
 
@@ -42,6 +39,9 @@ is (
   scalar (grep { $_ =~ /^\QDeferred version of method AccessorGroups::singlefield invoked more than once/ } @w),
   3,
   '3 warnings produced as expected on cached invocation during testing',
-);
+) or do {
+  require Data::Dumper;
+  diag "\n \$0 is: " . Data::Dumper->new([$0])->Useqq(1)->Terse(1)->Dump;
+};
 
 done_testing;

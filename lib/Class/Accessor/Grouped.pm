@@ -546,7 +546,7 @@ BEGIN {
   *__CAG_TRACK_UNDEFER_FAIL = (
     $INC{'Test/Builder.pm'} || $INC{'Test/Builder2.pm'}
       and
-    $0 =~ m|^ x?t [\/\\] .+ \.t $|x
+    $0 =~ m|^ x?t / .+ \.t $|x
   ) ? sub () { 1 }
     : sub () { 0 }
   ;
