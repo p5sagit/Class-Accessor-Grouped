@@ -43,6 +43,10 @@ use Benchmark qw/:hireswallclock cmpthese/;
     local $Class::Accessor::Grouped::USE_XS = 1;
     __PACKAGE__->mk_group_accessors ('simple', 'cag_xs');
   }
+
+  __PACKAGE__->mk_group_accessors ('inherited', 'cag_inh');
+  __PACKAGE__->cag_inh('initial value');
+
   __PACKAGE__->mk_accessors('caf');
 
   {
@@ -86,15 +90,19 @@ EOC
 sub _add_task {
   my ($tasks, $name, $meth, $slot) = @_;
 
+  # we precompile the desired amount of loops so that the loop itself
+  # does not get in the way with some sort of optimization or whatnot
+
   my $perl;
   for (1 .. 1000) {
     $perl .= "
+      \$::init_val = \$bench_objs->{$slot}->$meth;
       \$bench_objs->{$slot}->$meth($_);
       \$bench_objs->{$slot}->$meth(\$bench_objs->{$slot}->$meth + $_);
     ";
   }
 
-  $tasks->{$name} = eval "sub { $perl } ";
+  $tasks->{$name} = eval "sub { $perl } " or die $@;
 }
 
 my $tasks = {
@@ -104,7 +112,7 @@ my $tasks = {
 #  }
 };
 
-for (qw/CAG CAG_XS CAF CAF_XS CAF_XSA XSA HANDMADE/) {
+for (qw/CAG CAG_XS CAG_INH CAF CAF_XS CAF_XSA XSA HANDMADE/) {
   _add_task ($tasks, $_, lc($_), 'base');
 }
 
