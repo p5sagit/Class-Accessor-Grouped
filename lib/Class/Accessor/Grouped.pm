@@ -646,8 +646,71 @@ $gen_accessor = sub {
     die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
       if __CAG_NO_CXSA;
 
-    return sub {
+    my ($expected_cref, $cached_implementation);
+    my $ret = $expected_cref = sub {
       my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
+
+      # $cached_implementation will be set only if the shim got
+      # 'around'ed, in which case it is handy to avoid re-running
+      # this block over and over again
+      my $resolved_implementation = $cached_implementation->{$current_class} || do {
+        if (
+          $current_class->can('get_simple') == $original_simple_getter
+            &&
+          $current_class->can('set_simple') == $original_simple_setter
+        ) {
+          # nothing has changed, might as well use the XS crefs
+          #
+          # note that by the time this code executes, we already have
+          # *objects* (since XSA works on 'simple' only by definition).
+          # If someone is mucking with the symbol table *after* there
+          # are some objects already - look! many, shiny pieces! :)
+          #
+          # The weird breeder thingy is because XSA does not have an
+          # interface returning *just* a coderef, without installing it
+          # anywhere :(
+          Class::XSAccessor->import(
+            replace => 1,
+            class => '__CAG__XSA__BREEDER__',
+            $maker_templates->{$type}{xs_call} => {
+              $methname => $field,
+            },
+          );
+          __CAG__XSA__BREEDER__->can($methname);
+        }
+        else {
+          if (! $xsa_autodetected and ! $no_xsa_warned_classes->{$current_class}++) {
+            # not using Carp since the line where this happens doesn't mean much
+            warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class '
+              . "'$current_class' inheriting from '$class' due to an overriden get_simple and/or "
+              . "set_simple\n";
+          }
+
+          do {
+            # that's faster than local
+            $USE_XS = 0;
+            my $c = $gen_accessor->($type, $class, 'simple', $field, $methname);
+            $USE_XS = 1;
+            $c;
+          };
+        }
+      };
+
+      # if after this shim was created someone wrapped it with an 'around',
+      # we can not blindly reinstall the method slot - we will destroy the
+      # wrapper. Silently chain execution further...
+      if ($expected_cref != $current_class->can($methname)) {
+
+        # there is no point in re-determining it on every subsequent call,
+        # just store for future reference
+        $cached_implementation->{$current_class} ||= $resolved_implementation;
+
+        # older perls segfault if the cref behind the goto throws
+        # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
+        return $resolved_implementation->(@_) if __CAG_BROKEN_GOTO;
+
+        goto $resolved_implementation;
+      }
 
       if (__CAG_TRACK_UNDEFER_FAIL) {
         my $deferred_calls_seen = do {
@@ -668,52 +731,31 @@ $gen_accessor = sub {
         }
       }
 
-      if (
-        $current_class->can('get_simple') == $original_simple_getter
-          &&
-        $current_class->can('set_simple') == $original_simple_setter
-      ) {
-        # nothing has changed, might as well use the XS crefs
-        #
-        # note that by the time this code executes, we already have
-        # *objects* (since XSA works on 'simple' only by definition).
-        # If someone is mucking with the symbol table *after* there
-        # are some objects already - look! many, shiny pieces! :)
-        Class::XSAccessor->import(
-          replace => 1,
-          class => $current_class,
-          $maker_templates->{$type}{xs_call} => {
-            $methname => $field,
-          },
-        );
-      }
-      else {
-        if (! $xsa_autodetected and ! $no_xsa_warned_classes->{$current_class}++) {
-          # not using Carp since the line where this happens doesn't mean much
-          warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class '
-            . "'$current_class' inheriting from '$class' due to an overriden get_simple and/or "
-            . "set_simple\n";
-        }
-
+      # install the resolved implementation into the code slot so we do not
+      # come here anymore (hopefully)
+      # since XSAccessor was available - so is Sub::Name
+      {
         no strict 'refs';
         no warnings 'redefine';
 
         my $fq_name = "${current_class}::${methname}";
-        *$fq_name = Sub::Name::subname($fq_name, do {
-          # that's faster than local
-          $USE_XS = 0;
-          my $c = $gen_accessor->($type, $class, 'simple', $field, $methname);
-          $USE_XS = 1;
-          $c;
-        });
+        *$fq_name = Sub::Name::subname($fq_name, $resolved_implementation);
+
+        # need to update what the shim expects too *in case* its
+        # ->can was cached for some moronic reason
+        $expected_cref = $resolved_implementation;
+        Scalar::Util::weaken($expected_cref);
       }
 
       # older perls segfault if the cref behind the goto throws
       # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
-      return $current_class->can($methname)->(@_) if __CAG_BROKEN_GOTO;
+      return $resolved_implementation->(@_) if __CAG_BROKEN_GOTO;
 
-      goto $current_class->can($methname);
+      goto $resolved_implementation;
     };
+
+    Scalar::Util::weaken($expected_cref); # to break the self-reference
+    $ret;
   }
 
   # no Sub::Name - just install the coderefs directly (compiling every time)

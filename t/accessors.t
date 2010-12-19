@@ -1,4 +1,4 @@
-use Test::More tests => 98;
+use Test::More tests => 117;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -43,6 +43,12 @@ my $obj = AccessorGroupsSubclass->new;
 my $test_accessors = {
     singlefield => {
         is_xs => $use_xs,
+        has_extra => 1,
+    },
+    runtime_around => {
+        # even though this accessor is simple it will *not* be XSified
+        # due to the runtime 'around'
+        is_xs => 0,
         has_extra => 1,
     },
     multiple1 => {
