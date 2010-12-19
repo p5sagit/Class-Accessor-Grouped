@@ -689,7 +689,7 @@ $gen_accessor = sub {
       # if after this shim was created someone wrapped it with an 'around',
       # we can not blindly reinstall the method slot - we will destroy the
       # wrapper. Silently chain execution further...
-      if ($expected_cref != $current_class->can($methname)) {
+      if ( !$expected_cref or $expected_cref != $current_class->can($methname) ) {
 
         # there is no point in re-determining it on every subsequent call,
         # just store for future reference
