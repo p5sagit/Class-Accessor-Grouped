@@ -12,7 +12,7 @@ $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev relea
 # the Makefile.PL as well
 our $__minimum_xsa_version;
 BEGIN {
-    $__minimum_xsa_version = '1.06';
+    $__minimum_xsa_version = '1.11';
 }
 
 our $USE_XS;
@@ -410,8 +410,7 @@ To provide total flexibility L<Class::Accessor::Grouped> calls methods
 internally while performing get/set actions, which makes it noticeably
 slower than similar modules. To compensate, this module will automatically
 use the insanely fast L<Class::XSAccessor> to generate the C<simple>-group
-accessors, if L<< Class::XSAccessor >= 1.06|Class::XSAccessor >> is
-available on your system.
+accessors if this module is available on your system.
 
 =head2 Benchmark
 
@@ -453,12 +452,6 @@ enable use of C<Class::XSAccessor> (automatically or explicitly), create
 an object, invoke a simple accessor on that object, and B<then> manipulate
 the symbol table to install a C<get/set_simple> override - you get to keep
 all the pieces.
-
-While L<Class::XSAccessor> works surprisingly well for the amount of black
-magic it tries to pull off, it's still black magic. At present (Sep 2010)
-the module is known to have problems on Windows under heavy thread-stress
-(e.g. Win32+Apache+mod_perl). Thus for the time being L<Class::XSAccessor>
-will not be used automatically if you are running under C<MSWin32>.
 
 =head1 AUTHORS
 
@@ -553,12 +546,9 @@ BEGIN {
 }
 
 # Autodetect unless flag supplied
-# Class::XSAccessor is segfaulting on win32, in some
-# esoteric heavily-threaded scenarios
-# Win32 users can set $USE_XS/CAG_USE_XS to try to use it anyway
 my $xsa_autodetected;
 if (! defined $USE_XS) {
-  $USE_XS = (!__CAG_NO_CXSA and $^O ne 'MSWin32') ? 1 : 0;
+  $USE_XS = __CAG_NO_CXSA ? 0 : 1;
   $xsa_autodetected++;
 }
 

@@ -16,8 +16,8 @@ requires 'Class::Inspector';
 if (can_cc or $Module::Install::AUTHOR) {
   requires 'Sub::Name' => '0.05';
 
-  requires 'Class::XSAccessor' => '1.06'
-    if ($^O ne 'MSWin32' and $] > '5.008');
+  requires 'Class::XSAccessor' => '1.11'
+    if $] > '5.008';
 }
 
 test_requires 'Test::More' => '0.94';
