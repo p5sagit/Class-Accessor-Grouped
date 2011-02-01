@@ -3,7 +3,15 @@ use strict;
 use warnings;
 use Carp ();
 use Scalar::Util ();
-use MRO::Compat;
+
+BEGIN {
+  if ($] < 5.009_005) {
+    require MRO::Compat;
+  }
+  else {
+    require mro;
+  }
+}
 
 our $VERSION = '0.10002';
 $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases

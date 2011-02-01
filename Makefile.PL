@@ -10,7 +10,7 @@ all_from 'lib/Class/Accessor/Grouped.pm';
 
 requires 'Carp';
 requires 'Scalar::Util';
-requires 'MRO::Compat';
+requires 'MRO::Compat' if $] < 5.009_005;
 requires 'Class::Inspector';
 
 if (can_cc or $Module::Install::AUTHOR) {
@@ -36,10 +36,9 @@ resources repository =>
 'http://dev.catalyst.perl.org/repos/bast/Class-Accessor-Grouped/trunk';
 
 WriteAll;
-use Data::Dumper;
 if ($Module::Install::AUTHOR) {
   @{Meta->{values}{requires}} = grep
-    { $_->[0] !~ /^ (?: Class\:\:XSAccessor | Sub\:\:Name ) $/x }
+    { $_->[0] !~ /^ (?: Class\:\:XSAccessor | Sub\:\:Name | MRO\:\:Compat ) $/x }
     @{Meta->{values}{requires}}
   ;
   print "Regenerating META with XS requires excluded\n";
