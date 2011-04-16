@@ -32,8 +32,7 @@ if (-e 'MANIFEST.SKIP') {
 
 auto_install;
 
-resources repository =>
-'http://dev.catalyst.perl.org/repos/bast/Class-Accessor-Grouped/trunk';
+resources repository => 'git://git.shadowcat.co.uk/p5sagit/Class-Accessor-Grouped.git';
 
 WriteAll;
 if ($Module::Install::AUTHOR) {
