@@ -80,6 +80,14 @@ Class::Accessor::Grouped - Lets you build groups of accessors
 
 =head1 SYNOPSIS
 
+ use base 'Class::Accessor::Grouped';
+
+ # make basic accessors for objects
+ __PACKAGE__->mk_group_accessors(simple => qw(id name email));
+
+ # make accessor that works for objects and classes
+ __PACKAGE__->mk_group_accessors(inherited => 'awesome_level');
+
 =head1 DESCRIPTION
 
 This class lets you build groups of accessors that will call different
@@ -470,6 +478,8 @@ Christopher H. Laco <claco@chrislaco.com>
 =head1 CONTRIBUTORS
 
 Caelum: Rafael Kitover <rkitover@cpan.org>
+
+frew: Arthur Axel "fREW" Schmidt <frioux@gmail.com>
 
 groditi: Guillermo Roditi <groditi@cpan.org>
 

@@ -1,5 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Add SYNOPSIS
+
 0.10002 Sun Dec 19 05:23:44 2010
     - Fix grave bug of XS-enabled simple accessors clobbering an
       existing 'around' overlay installed in the same method slot
