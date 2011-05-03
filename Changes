@@ -1,6 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
     - Add SYNOPSIS
+    - Add examples for methods that get used most often
 
 0.10002 Sun Dec 19 05:23:44 2010
     - Fix grave bug of XS-enabled simple accessors clobbering an

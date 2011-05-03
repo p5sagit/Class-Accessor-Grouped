@@ -97,6 +97,8 @@ getters and setters.
 
 =head2 mk_group_accessors
 
+ __PACKAGE__->mk_group_accessors(simple => 'hair_length');
+
 =over 4
 
 =item Arguments: $group, @fieldspec
@@ -129,6 +131,8 @@ sub mk_group_accessors {
 
 =head2 mk_group_ro_accessors
 
+ __PACKAGE__->mk_group_ro_accessors(simple => 'birthdate');
+
 =over 4
 
 =item Arguments: $group, @fieldspec
@@ -150,6 +154,8 @@ sub mk_group_ro_accessors {
 }
 
 =head2 mk_group_wo_accessors
+
+ __PACKAGE__->mk_group_wo_accessors(simple => 'lie');
 
 =over 4
 
@@ -173,6 +179,8 @@ sub mk_group_wo_accessors {
 
 =head2 make_group_accessor
 
+ __PACKAGE__->make_group_accessor(simple => 'hair_length', 'hair_length');
+
 =over 4
 
 =item Arguments: $group, $field, $method
@@ -191,6 +199,8 @@ sub make_group_accessor { $gen_accessor->('rw', @_) }
 
 =head2 make_group_ro_accessor
 
+ __PACKAGE__->make_group_ro_accessor(simple => 'birthdate', 'birthdate');
+
 =over 4
 
 =item Arguments: $group, $field, $method
@@ -208,6 +218,8 @@ C<undef> if it elects to install the coderef on its own.
 sub make_group_ro_accessor { $gen_accessor->('ro', @_) }
 
 =head2 make_group_wo_accessor
+
+ __PACKAGE__->make_group_wo_accessor(simple => 'lie', 'lie');
 
 =over 4
 
