@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Only require MRO::Compat for older perls
     - Add SYNOPSIS
     - Add examples for methods that get used most often
 
