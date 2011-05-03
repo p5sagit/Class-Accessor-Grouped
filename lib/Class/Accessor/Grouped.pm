@@ -13,7 +13,7 @@ BEGIN {
   }
 }
 
-our $VERSION = '0.10002';
+our $VERSION = '0.10003';
 $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust L</PERFORMANCE> and

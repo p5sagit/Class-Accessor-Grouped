@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+0.10003 2011-05-03 00:15 (UTC)
     - Only require MRO::Compat for older perls
     - Add SYNOPSIS
     - Add examples for methods that get used most often
