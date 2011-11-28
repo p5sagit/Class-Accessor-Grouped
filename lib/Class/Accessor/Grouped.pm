@@ -97,7 +97,7 @@ getters and setters.
 
 =head2 mk_group_accessors
 
- __PACKAGE__->mk_group_accessors(simple => 'hair_length');
+ __PACKAGE__->mk_group_accessors(simple => 'hair_length', [ hair_color => 'hc' ]);
 
 =over 4
 
@@ -131,7 +131,7 @@ sub mk_group_accessors {
 
 =head2 mk_group_ro_accessors
 
- __PACKAGE__->mk_group_ro_accessors(simple => 'birthdate');
+ __PACKAGE__->mk_group_ro_accessors(simple => 'birthdate', [ social_security_number => 'ssn' ]);
 
 =over 4
 
@@ -155,7 +155,7 @@ sub mk_group_ro_accessors {
 
 =head2 mk_group_wo_accessors
 
- __PACKAGE__->mk_group_wo_accessors(simple => 'lie');
+ __PACKAGE__->mk_group_wo_accessors(simple => 'lie', [ subject => 'subj' ]);
 
 =over 4
 
@@ -176,66 +176,6 @@ sub mk_group_wo_accessors {
 
     $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
 }
-
-=head2 make_group_accessor
-
- __PACKAGE__->make_group_accessor(simple => 'hair_length', 'hair_length');
-
-=over 4
-
-=item Arguments: $group, $field, $method
-
-Returns: \&accessor_coderef ?
-
-=back
-
-Called by mk_group_accessors for each entry in @fieldspec. Either returns
-a coderef which will be installed at C<&__PACKAGE__::$method>, or returns
-C<undef> if it elects to install the coderef on its own.
-
-=cut
-
-sub make_group_accessor { $gen_accessor->('rw', @_) }
-
-=head2 make_group_ro_accessor
-
- __PACKAGE__->make_group_ro_accessor(simple => 'birthdate', 'birthdate');
-
-=over 4
-
-=item Arguments: $group, $field, $method
-
-Returns: \&accessor_coderef ?
-
-=back
-
-Called by mk_group_ro_accessors for each entry in @fieldspec. Either returns
-a coderef which will be installed at C<&__PACKAGE__::$method>, or returns
-C<undef> if it elects to install the coderef on its own.
-
-=cut
-
-sub make_group_ro_accessor { $gen_accessor->('ro', @_) }
-
-=head2 make_group_wo_accessor
-
- __PACKAGE__->make_group_wo_accessor(simple => 'lie', 'lie');
-
-=over 4
-
-=item Arguments: $group, $field, $method
-
-Returns: \&accessor_coderef ?
-
-=back
-
-Called by mk_group_wo_accessors for each entry in @fieldspec. Either returns
-a coderef which will be installed at C<&__PACKAGE__::$method>, or returns
-C<undef> if it elects to install the coderef on its own.
-
-=cut
-
-sub make_group_wo_accessor { $gen_accessor->('wo', @_) }
 
 =head2 get_simple
 
@@ -422,15 +362,85 @@ sub set_component_class {
     return $_[0]->set_inherited($_[1], $_[2]);
 };
 
+=head1 INTERNAL METHODS
+
+These methods are documented for clarity, but are never meant to be called
+directly, and are not really meant for overriding either.
+
 =head2 get_super_paths
 
-Returns a list of 'parent' or 'super' class names that the current class inherited from.
+Returns a list of 'parent' or 'super' class names that the current class
+inherited from. This is what drives the traversal done by L</get_inherited>.
 
 =cut
 
 sub get_super_paths {
     return @{mro::get_linear_isa( ref($_[0]) || $_[0] )};
 };
+
+=head2 make_group_accessor
+
+ __PACKAGE__->make_group_accessor('simple', 'hair_length', 'hair_length');
+ __PACKAGE__->make_group_accessor('simple', 'hc', 'hair_color');
+
+=over 4
+
+=item Arguments: $group, $field, $accessor
+
+Returns: \&accessor_coderef ?
+
+=back
+
+Called by mk_group_accessors for each entry in @fieldspec. Either returns
+a coderef which will be installed at C<&__PACKAGE__::$accessor>, or returns
+C<undef> if it elects to install the coderef on its own.
+
+=cut
+
+sub make_group_accessor { $gen_accessor->('rw', @_) }
+
+=head2 make_group_ro_accessor
+
+ __PACKAGE__->make_group_ro_accessor('simple', 'birthdate', 'birthdate');
+ __PACKAGE__->make_group_ro_accessor('simple', 'ssn', 'social_security_number');
+
+=over 4
+
+=item Arguments: $group, $field, $accessor
+
+Returns: \&accessor_coderef ?
+
+=back
+
+Called by mk_group_ro_accessors for each entry in @fieldspec. Either returns
+a coderef which will be installed at C<&__PACKAGE__::$accessor>, or returns
+C<undef> if it elects to install the coderef on its own.
+
+=cut
+
+sub make_group_ro_accessor { $gen_accessor->('ro', @_) }
+
+=head2 make_group_wo_accessor
+
+ __PACKAGE__->make_group_wo_accessor('simple', 'lie', 'lie');
+ __PACKAGE__->make_group_wo_accessor('simple', 'subj', 'subject');
+
+=over 4
+
+=item Arguments: $group, $field, $accessor
+
+Returns: \&accessor_coderef ?
+
+=back
+
+Called by mk_group_wo_accessors for each entry in @fieldspec. Either returns
+a coderef which will be installed at C<&__PACKAGE__::$accessor>, or returns
+C<undef> if it elects to install the coderef on its own.
+
+=cut
+
+sub make_group_wo_accessor { $gen_accessor->('wo', @_) }
+
 
 =head1 PERFORMANCE
 
