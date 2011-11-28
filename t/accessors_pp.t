@@ -7,6 +7,7 @@ use Test::More;
 use lib 't/lib';
 
 BEGIN {
+  local $ENV{DEVEL_HIDE_VERBOSE} = 0;
   eval { require Devel::Hide };
   if ($@) {
     eval { require Sub::Name };
