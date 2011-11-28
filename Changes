@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+    - No longer leak internal __CAG* methods into the inheritable
+      namespace
+
 0.10003 2011-05-03 00:15 (UTC)
     - Only require MRO::Compat for older perls
     - Add SYNOPSIS

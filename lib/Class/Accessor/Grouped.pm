@@ -542,7 +542,7 @@ BEGIN {
     delete $INC{'Sub/Name.pm'};   # because older perls suck
     $@;
   };
-  *__CAG_NO_SUBNAME = $err
+  *__CAG_ENV__::NO_SUBNAME = $err
     ? sub () { $err }
     : sub () { 0 }
   ;
@@ -558,25 +558,25 @@ BEGIN {
     delete $INC{'Class/XSAccessor.pm'};
     $@;
   };
-  *__CAG_NO_CXSA = $err
+  *__CAG_ENV__::NO_CXSA = $err
     ? sub () { $err }
     : sub () { 0 }
   ;
 
 
-  *__CAG_BROKEN_GOTO = ($] < '5.008009')
+  *__CAG_ENV__::BROKEN_GOTO = ($] < '5.008009')
     ? sub () { 1 }
     : sub () { 0 }
   ;
 
 
-  *__CAG_UNSTABLE_DOLLARAT = ($] < '5.013002')
+  *__CAG_ENV__::UNSTABLE_DOLLARAT = ($] < '5.013002')
     ? sub () { 1 }
     : sub () { 0 }
   ;
 
 
-  *__CAG_TRACK_UNDEFER_FAIL = (
+  *__CAG_ENV__::TRACK_UNDEFER_FAIL = (
     $INC{'Test/Builder.pm'} || $INC{'Test/Builder2.pm'}
       and
     $0 =~ m|^ x?t / .+ \.t $|x
@@ -588,7 +588,7 @@ BEGIN {
 # Autodetect unless flag supplied
 my $xsa_autodetected;
 if (! defined $USE_XS) {
-  $USE_XS = __CAG_NO_CXSA ? 0 : 1;
+  $USE_XS = __CAG_ENV__::NO_CXSA ? 0 : 1;
   $xsa_autodetected++;
 }
 
@@ -673,8 +673,8 @@ $gen_accessor = sub {
   # Thus the final method (properly labeled and all) is installed in the
   # calling-package's namespace
   if ($USE_XS and $group eq 'simple') {
-    die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
-      if __CAG_NO_CXSA;
+    die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_ENV__::NO_CXSA )
+      if __CAG_ENV__::NO_CXSA;
 
     my ($expected_cref, $cached_implementation);
     my $ret = $expected_cref = sub {
@@ -737,12 +737,12 @@ $gen_accessor = sub {
 
         # older perls segfault if the cref behind the goto throws
         # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
-        return $resolved_implementation->(@_) if __CAG_BROKEN_GOTO;
+        return $resolved_implementation->(@_) if __CAG_ENV__::BROKEN_GOTO;
 
         goto $resolved_implementation;
       }
 
-      if (__CAG_TRACK_UNDEFER_FAIL) {
+      if (__CAG_ENV__::TRACK_UNDEFER_FAIL) {
         my $deferred_calls_seen = do {
           no strict 'refs';
           \%{"${current_class}::__cag_deferred_xs_shim_invocations"}
@@ -779,7 +779,7 @@ $gen_accessor = sub {
 
       # older perls segfault if the cref behind the goto throws
       # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
-      return $resolved_implementation->(@_) if __CAG_BROKEN_GOTO;
+      return $resolved_implementation->(@_) if __CAG_ENV__::BROKEN_GOTO;
 
       goto $resolved_implementation;
     };
@@ -789,12 +789,12 @@ $gen_accessor = sub {
   }
 
   # no Sub::Name - just install the coderefs directly (compiling every time)
-  elsif (__CAG_NO_SUBNAME) {
+  elsif (__CAG_ENV__::NO_SUBNAME) {
     my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
       $maker_templates->{$type}{pp_code}->($group, $field);
 
     no warnings 'redefine';
-    local $@ if __CAG_UNSTABLE_DOLLARAT;
+    local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
     eval "sub ${class}::${methname} { $src }";
 
     undef;  # so that no further attempt will be made to install anything
@@ -806,7 +806,7 @@ $gen_accessor = sub {
       my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
         $maker_templates->{$type}{pp_code}->($group, $field);
 
-      local $@ if __CAG_UNSTABLE_DOLLARAT;
+      local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
       eval "sub { my \$dummy; sub { \$dummy if 0; $src } }" or die $@;
     })->()
   }
