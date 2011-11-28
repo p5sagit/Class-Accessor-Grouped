@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+0.10004 2011-11-28 21:20 (UTC)
     - No longer leak internal __CAG* methods into the inheritable
       namespace
 
