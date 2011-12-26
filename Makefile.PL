@@ -15,7 +15,8 @@ requires 'Class::Inspector';
 if (can_cc or $Module::Install::AUTHOR) {
   requires 'Sub::Name' => '0.05';
 
-  requires 'Class::XSAccessor' => '1.11'
+  # when changing don't forget to adjust lib/Class/Accessor/Grouped.pm as well
+  requires 'Class::XSAccessor' => '1.13'
     if $] > '5.008';
 }
 
@@ -42,4 +43,3 @@ if ($Module::Install::AUTHOR) {
   print "Regenerating META with XS requires excluded\n";
   Meta->write;
 }
-
