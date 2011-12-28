@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Grouped.
 
+0.10006 2011-12-30 03:52 (UTC)
+    - Silence warnings resulting from incomplete can() overrides
+      hiding get/set_simple methods
+
 0.10005 2011-12-26 12:43 (UTC)
     - Depend on newer bugfixed Class::XSAccessor
     - Repack with correct metadata (RT#73100)

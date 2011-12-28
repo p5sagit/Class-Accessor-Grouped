@@ -13,7 +13,7 @@ BEGIN {
   }
 }
 
-our $VERSION = '0.10005';
+our $VERSION = '0.10006';
 $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust Makefile.PL as well
@@ -682,9 +682,9 @@ $gen_accessor = sub {
       # this block over and over again
       my $resolved_implementation = $cached_implementation->{$current_class} || do {
         if (
-          $current_class->can('get_simple') == $original_simple_getter
+          ($current_class->can('get_simple')||0) == $original_simple_getter
             &&
-          $current_class->can('set_simple') == $original_simple_setter
+          ($current_class->can('set_simple')||0) == $original_simple_setter
         ) {
           # nothing has changed, might as well use the XS crefs
           #
@@ -726,7 +726,7 @@ $gen_accessor = sub {
       # if after this shim was created someone wrapped it with an 'around',
       # we can not blindly reinstall the method slot - we will destroy the
       # wrapper. Silently chain execution further...
-      if ( !$expected_cref or $expected_cref != $current_class->can($methname) ) {
+      if ( !$expected_cref or $expected_cref != ($current_class->can($methname)||0) ) {
 
         # there is no point in re-determining it on every subsequent call,
         # just store for future reference
