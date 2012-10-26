@@ -6,7 +6,7 @@ use base 'Class::Accessor::Grouped';
 __PACKAGE__->mk_group_accessors('inherited', 'basefield', 'undefined');
 
 sub new {
-    return bless {}, shift;
+  return bless {}, shift;
 };
 
 1;

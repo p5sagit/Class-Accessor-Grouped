@@ -2,13 +2,13 @@ use strict;
 use warnings;
 
 BEGIN {
-    use lib 't/lib';
-    use Test::More;
+  use lib 't/lib';
+  use Test::More;
 
-    plan skip_all => 'set TEST_AUTHOR to enable this test' unless $ENV{TEST_AUTHOR};
+  plan skip_all => 'set TEST_AUTHOR to enable this test' unless $ENV{TEST_AUTHOR};
 
-    eval 'use Test::Spelling 0.11';
-    plan skip_all => 'Test::Spelling 0.11 not installed' if $@;
+  eval 'use Test::Spelling 0.11';
+  plan skip_all => 'Test::Spelling 0.11 not installed' if $@;
 };
 
 set_spell_cmd('aspell list');

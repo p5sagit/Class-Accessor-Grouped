@@ -26,8 +26,8 @@ test_requires 'Test::Exception' => '0.31';
 clean_files "Class-Accessor-Grouped-* t/var";
 
 if (-e 'MANIFEST.SKIP') {
-    system('pod2text lib/Class/Accessor/Grouped.pm > README');
-    realclean_files 'README';
+  system('pod2text lib/Class/Accessor/Grouped.pm > README');
+  realclean_files 'README';
 }
 
 auto_install;

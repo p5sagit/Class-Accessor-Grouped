@@ -4,7 +4,7 @@ use warnings;
 use base 'Class::Accessor::Grouped';
 
 sub new {
-    return bless [], shift;
+  return bless [], shift;
 };
 
 __PACKAGE__->mk_group_accessors('inherited', 'killme');

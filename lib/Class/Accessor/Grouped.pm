@@ -24,48 +24,44 @@ our $USE_XS;
 # the unless defined is here so that we can override the value
 # before require/use, *regardless* of the state of $ENV{CAG_USE_XS}
 $USE_XS = $ENV{CAG_USE_XS}
-    unless defined $USE_XS;
+  unless defined $USE_XS;
 
 # Yes this method is undocumented
 # Yes it should be a private coderef like all the rest at the end of this file
 # No we can't do that (yet) because the DBIC-CDBI compat layer overrides it
 # %$*@!?&!&#*$!!!
 sub _mk_group_accessors {
-    my($self, $maker, $group, @fields) = @_;
-    my $class = Scalar::Util::blessed $self || $self;
+  my($self, $maker, $group, @fields) = @_;
+  my $class = Scalar::Util::blessed $self || $self;
 
-    no strict 'refs';
-    no warnings 'redefine';
+  no strict 'refs';
+  no warnings 'redefine';
 
-    # So we don't have to do lots of lookups inside the loop.
-    $maker = $self->can($maker) unless ref $maker;
+  # So we don't have to do lots of lookups inside the loop.
+  $maker = $self->can($maker) unless ref $maker;
 
-    foreach (@fields) {
-        if( $_ eq 'DESTROY' ) {
-            Carp::carp("Having a data accessor named DESTROY in ".
-                       "'$class' is unwise.");
-        }
-
-        my ($name, $field) = (ref $_)
-            ? (@$_)
-            : ($_, $_)
-        ;
-
-        my $alias = "_${name}_accessor";
-
-        for my $meth ($name, $alias) {
-
-            # the maker may elect to not return anything, meaning it already
-            # installed the coderef for us (e.g. lack of Sub::Name)
-            my $cref = $self->$maker($group, $field, $meth)
-                or next;
-
-            my $fq_meth = "${class}::${meth}";
-
-            *$fq_meth = Sub::Name::subname($fq_meth, $cref);
-                #unless defined &{$class."\:\:$field"}
-        }
+  for (@fields) {
+    if( $_ eq 'DESTROY' ) {
+      Carp::carp("Having a data accessor named DESTROY in '$class' is unwise.");
     }
+
+    my ($name, $field) = (ref $_) ? (@$_) : ($_, $_);
+
+    my $alias = "_${name}_accessor";
+
+    for my $meth ($name, $alias) {
+
+      # the maker may elect to not return anything, meaning it already
+      # installed the coderef for us (e.g. lack of Sub::Name)
+      my $cref = $self->$maker($group, $field, $meth)
+        or next;
+
+      my $fq_meth = "${class}::${meth}";
+
+      *$fq_meth = Sub::Name::subname($fq_meth, $cref);
+        #unless defined &{$class."\:\:$field"}
+    }
+  }
 };
 
 # coderef is setup at the end for clarity
@@ -120,10 +116,10 @@ be of the form [ $accessor, $field ].
 =cut
 
 sub mk_group_accessors {
-    my ($self, $group, @fields) = @_;
+  my ($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_accessor', $group, @fields);
-    return;
+  $self->_mk_group_accessors('make_group_accessor', $group, @fields);
+  return;
 }
 
 =head2 mk_group_ro_accessors
@@ -145,9 +141,9 @@ rather than setting the value.
 =cut
 
 sub mk_group_ro_accessors {
-    my($self, $group, @fields) = @_;
+  my($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_ro_accessor', $group, @fields);
+  $self->_mk_group_accessors('make_group_ro_accessor', $group, @fields);
 }
 
 =head2 mk_group_wo_accessors
@@ -169,9 +165,9 @@ value rather than getting the value.
 =cut
 
 sub mk_group_wo_accessors {
-    my($self, $group, @fields) = @_;
+  my($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
+  $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
 }
 
 =head2 get_simple
@@ -190,7 +186,7 @@ name passed as an argument.
 =cut
 
 sub get_simple {
-    return $_[0]->{$_[1]};
+  return $_[0]->{$_[1]};
 }
 
 =head2 set_simple
@@ -209,7 +205,7 @@ for the field name passed as an argument.
 =cut
 
 sub set_simple {
-    return $_[0]->{$_[1]} = $_[2];
+  return $_[0]->{$_[1]} = $_[2];
 }
 
 
@@ -232,38 +228,38 @@ instances.
 =cut
 
 sub get_inherited {
-    my $class;
+  my $class;
 
-    if ( defined( $class = Scalar::Util::blessed $_[0] ) ) {
-        if (Scalar::Util::reftype $_[0] eq 'HASH') {
-          return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
-        }
-        else {
-          Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
-        }
+  if ( defined( $class = Scalar::Util::blessed $_[0] ) ) {
+    if (Scalar::Util::reftype $_[0] eq 'HASH') {
+      return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
     }
     else {
-        $class = $_[0];
+      Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
     }
+  }
+  else {
+    $class = $_[0];
+  }
 
-    no strict 'refs';
-    no warnings 'uninitialized';
+  no strict 'refs';
+  no warnings 'uninitialized';
 
-    my $cag_slot = '::__cag_'. $_[1];
-    return ${$class.$cag_slot} if defined(${$class.$cag_slot});
+  my $cag_slot = '::__cag_'. $_[1];
+  return ${$class.$cag_slot} if defined(${$class.$cag_slot});
 
-    # we need to be smarter about recalculation, as @ISA (thus supers) can very well change in-flight
-    my $cur_gen = mro::get_pkg_gen ($class);
-    if ( $cur_gen != ${$class.'::__cag_pkg_gen__'} ) {
-        @{$class.'::__cag_supers__'} = $_[0]->get_super_paths;
-        ${$class.'::__cag_pkg_gen__'} = $cur_gen;
-    }
+  # we need to be smarter about recalculation, as @ISA (thus supers) can very well change in-flight
+  my $cur_gen = mro::get_pkg_gen ($class);
+  if ( $cur_gen != ${$class.'::__cag_pkg_gen__'} ) {
+    @{$class.'::__cag_supers__'} = $_[0]->get_super_paths;
+    ${$class.'::__cag_pkg_gen__'} = $cur_gen;
+  }
 
-    for (@{$class.'::__cag_supers__'}) {
-        return ${$_.$cag_slot} if defined(${$_.$cag_slot});
-    };
+  for (@{$class.'::__cag_supers__'}) {
+    return ${$_.$cag_slot} if defined(${$_.$cag_slot});
+  };
 
-    return undef;
+  return undef;
 }
 
 =head2 set_inherited
@@ -287,17 +283,17 @@ hash-based object.
 =cut
 
 sub set_inherited {
-    if (defined Scalar::Util::blessed $_[0]) {
-        if (Scalar::Util::reftype $_[0] eq 'HASH') {
-            return $_[0]->{$_[1]} = $_[2];
-        } else {
-            Carp::croak('Cannot set inherited value on an object instance that is not hash-based');
-        };
+  if (defined Scalar::Util::blessed $_[0]) {
+    if (Scalar::Util::reftype $_[0] eq 'HASH') {
+      return $_[0]->{$_[1]} = $_[2];
     } else {
-        no strict 'refs';
-
-        return ${$_[0].'::__cag_'.$_[1]} = $_[2];
+      Carp::croak('Cannot set inherited value on an object instance that is not hash-based');
     };
+  } else {
+    no strict 'refs';
+
+    return ${$_[0].'::__cag_'.$_[1]} = $_[2];
+  };
 }
 
 =head2 get_component_class
@@ -312,17 +308,17 @@ Returns: $value
 
 Gets the value of the specified component class.
 
-    __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
+ __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
 
-    $self->result_class->method();
+ $self->result_class->method();
 
-    ## same as
-    $self->get_component_class('result_class')->method();
+ ## same as
+ $self->get_component_class('result_class')->method();
 
 =cut
 
 sub get_component_class {
-    return $_[0]->get_inherited($_[1]);
+  return $_[0]->get_inherited($_[1]);
 };
 
 =head2 set_component_class
@@ -338,25 +334,25 @@ Returns: $new_value
 Inherited accessor that automatically loads the specified class before setting
 it. This method will die if the specified class could not be loaded.
 
-    __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
-    __PACKAGE__->result_class('MyClass');
+ __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
+ __PACKAGE__->result_class('MyClass');
 
-    $self->result_class->method();
+ $self->result_class->method();
 
 =cut
 
 sub set_component_class {
-    if ($_[2]) {
-        local $^W = 0;
-        require Class::Inspector;
-        if (Class::Inspector->installed($_[2]) && !Class::Inspector->loaded($_[2])) {
-            eval "require $_[2]";
+  if ($_[2]) {
+    local $^W = 0;
+    require Class::Inspector;
+    if (Class::Inspector->installed($_[2]) && !Class::Inspector->loaded($_[2])) {
+      eval "require $_[2]";
 
-            Carp::croak("Could not load $_[1] '$_[2]': ", $@) if $@;
-        };
+      Carp::croak("Could not load $_[1] '$_[2]': ", $@) if $@;
     };
+  };
 
-    return $_[0]->set_inherited($_[1], $_[2]);
+  return $_[0]->set_inherited($_[1], $_[2]);
 };
 
 =head1 INTERNAL METHODS
@@ -372,7 +368,7 @@ inherited from. This is what drives the traversal done by L</get_inherited>.
 =cut
 
 sub get_super_paths {
-    return @{mro::get_linear_isa( ref($_[0]) || $_[0] )};
+  return @{mro::get_linear_isa( ref($_[0]) || $_[0] )};
 };
 
 =head2 make_group_accessor

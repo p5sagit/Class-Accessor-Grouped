@@ -57,13 +57,13 @@ EOE
 }
 
 sub new {
-    return bless {}, shift;
+  return bless {}, shift;
 };
 
 foreach (qw/multiple listref/) {
-    no strict 'refs';
-    *{"get_$_"} = __PACKAGE__->can('get_simple');
-    *{"set_$_"} = __PACKAGE__->can('set_simple');
+  no strict 'refs';
+  *{"get_$_"} = __PACKAGE__->can('get_simple');
+  *{"set_$_"} = __PACKAGE__->can('set_simple');
 };
 
 1;

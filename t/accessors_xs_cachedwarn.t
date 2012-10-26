@@ -4,14 +4,14 @@ use Test::More;
 use lib 't/lib';
 
 BEGIN {
-    require Class::Accessor::Grouped;
-    my $xsa_ver = $Class::Accessor::Grouped::__minimum_xsa_version;
-    eval {
-        require Class::XSAccessor;
-        Class::XSAccessor->VERSION ($xsa_ver);
-    };
-    plan skip_all => "Class::XSAccessor >= $xsa_ver not available"
-      if $@;
+  require Class::Accessor::Grouped;
+  my $xsa_ver = $Class::Accessor::Grouped::__minimum_xsa_version;
+  eval {
+    require Class::XSAccessor;
+    Class::XSAccessor->VERSION ($xsa_ver);
+  };
+  plan skip_all => "Class::XSAccessor >= $xsa_ver not available"
+    if $@;
 }
 
 use AccessorGroupsSubclass;

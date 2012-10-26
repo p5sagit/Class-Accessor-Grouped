@@ -11,7 +11,7 @@ is(AccessorGroupsComp->result_class, undef);
 ## croak on set where class can't be loaded and it's a physical class
 my $dying = AccessorGroupsComp->new;
 throws_ok {
-    $dying->result_class('NotReallyAClass');
+  $dying->result_class('NotReallyAClass');
 } qr/Could not load result_class 'NotReallyAClass'/;
 is($dying->result_class, undef);
 

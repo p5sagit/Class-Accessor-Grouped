@@ -59,11 +59,11 @@ is(BaseInheritedGroups->basefield, 'All Your Base');
 my $dying = NotHashBased->new;
 
 throws_ok {
-    $dying->killme;
+  $dying->killme;
 } qr/Cannot get.*is not hash-based/;
 
 throws_ok {
-    $dying->killme('foo');
+  $dying->killme('foo');
 } qr/Cannot set.*is not hash-based/;
 
 # make sure we're get defined items, even 0, ''
