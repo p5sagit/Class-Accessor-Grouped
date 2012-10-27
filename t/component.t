@@ -3,7 +3,6 @@ use Test::Exception;
 use strict;
 use warnings;
 use lib 't/lib';
-use Class::Inspector;
 use AccessorGroupsComp;
 
 is(AccessorGroupsComp->result_class, undef);
@@ -21,9 +20,9 @@ is($dying->result_class, undef);
 $dying->result_class('JunkiesNeverInstalled');
 is($dying->result_class, 'JunkiesNeverInstalled');
 
-ok(!Class::Inspector->loaded('BaseInheritedGroups'));
+ok(! $INC{'BaseInheritedGroups.pm'});
 AccessorGroupsComp->result_class('BaseInheritedGroups');
-ok(Class::Inspector->loaded('BaseInheritedGroups'));
+ok($INC{'BaseInheritedGroups.pm'});
 is(AccessorGroupsComp->result_class, 'BaseInheritedGroups');
 
 ## unset it

@@ -8,16 +8,16 @@ perl_version '5.006';
 all_from 'lib/Class/Accessor/Grouped.pm';
 
 requires 'Carp';
+requires 'Module::Runtime' => '0.012';
 requires 'Scalar::Util';
 requires 'MRO::Compat' if $] < 5.009_005;
-requires 'Class::Inspector';
 
 if (can_cc or $Module::Install::AUTHOR) {
   requires 'Sub::Name' => '0.05';
 
   # when changing don't forget to adjust lib/Class/Accessor/Grouped.pm as well
   requires 'Class::XSAccessor' => '1.13'
-    if $] > '5.008';
+    if $] > '5.008'; # CXSA does not work on 5.6
 }
 
 test_requires 'Test::More' => '0.94';

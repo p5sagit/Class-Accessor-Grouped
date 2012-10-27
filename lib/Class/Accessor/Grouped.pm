@@ -3,10 +3,12 @@ use strict;
 use warnings;
 use Carp ();
 use Scalar::Util ();
+use Module::Runtime ();
 
 BEGIN {
+  # use M::R to work around the 5.8 require bugs
   if ($] < 5.009_005) {
-    require MRO::Compat;
+    Module::Runtime::require_module('MRO::Compat');
   }
   else {
     require mro;
@@ -25,6 +27,36 @@ our $USE_XS;
 # before require/use, *regardless* of the state of $ENV{CAG_USE_XS}
 $USE_XS = $ENV{CAG_USE_XS}
   unless defined $USE_XS;
+
+BEGIN {
+  package __CAG_ENV__;
+
+  die "Huh?! No minimum C::XSA version?!\n"
+    unless $__minimum_xsa_version;
+
+  local $@;
+  require constant;
+
+  # individual (one const at a time) imports so we are 5.6.2 compatible
+  # if we can - why not ;)
+  constant->import( NO_SUBNAME => eval {
+    Module::Runtime::require_module('Sub::Name')
+  } ? 0 : "$@" );
+
+  constant->import( NO_CXSA => ( !NO_SUBNAME() and eval {
+    Module::Runtime::use_module('Class::XSAccessor' => $__minimum_xsa_version)
+  } ) ? 0 : "$@" );
+
+  constant->import( BROKEN_GOTO => ($] < '5.008009') ? 1 : 0 );
+
+  constant->import( UNSTABLE_DOLLARAT => ($] < '5.013002') ? 1 : 0 );
+
+  constant->import( TRACK_UNDEFER_FAIL => (
+    $INC{'Test/Builder.pm'} || $INC{'Test/Builder2.pm'}
+      and
+    $0 =~ m|^ x?t / .+ \.t $|x
+  ) ? 1 : 0 );
+}
 
 # Yes this method is undocumented
 # Yes it should be a private coderef like all the rest at the end of this file
@@ -342,14 +374,25 @@ it. This method will die if the specified class could not be loaded.
 =cut
 
 sub set_component_class {
-  if ($_[2]) {
-    local $^W = 0;
-    require Class::Inspector;
-    if (Class::Inspector->installed($_[2]) && !Class::Inspector->loaded($_[2])) {
-      eval "require $_[2]";
+  if (defined $_[2] and length $_[2]) {
+    # disable warnings, and prevent $_ being eaten away by a behind-the-scenes
+    # module loading
+    local ($^W, $_);
 
-      Carp::croak("Could not load $_[1] '$_[2]': ", $@) if $@;
-    };
+    if (__CAG_ENV__::UNSTABLE_DOLLARAT) {
+      my $err;
+      {
+        local $@;
+        eval { Module::Runtime::use_package_optimistically($_[2]) }
+          or $err = $@;
+      }
+      Carp::croak("Could not load $_[1] '$_[2]': $err") if defined $err;
+
+    }
+    else {
+      eval { Module::Runtime::use_package_optimistically($_[2]) }
+        or Carp::croak("Could not load $_[1] '$_[2]': $@");
+    }
   };
 
   return $_[0]->set_inherited($_[1], $_[2]);
@@ -521,62 +564,6 @@ it under the same terms as perl itself.
 #
 ########################################################################
 ########################################################################
-
-BEGIN {
-
-  die "Huh?! No minimum C::XSA version?!\n"
-    unless $__minimum_xsa_version;
-
-  local $@;
-  my $err;
-
-
-  $err = eval { require Sub::Name; 1; } ? undef : do {
-    delete $INC{'Sub/Name.pm'};   # because older perls suck
-    $@;
-  };
-  *__CAG_ENV__::NO_SUBNAME = $err
-    ? sub () { $err }
-    : sub () { 0 }
-  ;
-
-
-  $err = eval {
-    require Class::XSAccessor;
-    Class::XSAccessor->VERSION($__minimum_xsa_version);
-    require Sub::Name;
-    1;
-  } ? undef : do {
-    delete $INC{'Sub/Name.pm'};   # because older perls suck
-    delete $INC{'Class/XSAccessor.pm'};
-    $@;
-  };
-  *__CAG_ENV__::NO_CXSA = $err
-    ? sub () { $err }
-    : sub () { 0 }
-  ;
-
-
-  *__CAG_ENV__::BROKEN_GOTO = ($] < '5.008009')
-    ? sub () { 1 }
-    : sub () { 0 }
-  ;
-
-
-  *__CAG_ENV__::UNSTABLE_DOLLARAT = ($] < '5.013002')
-    ? sub () { 1 }
-    : sub () { 0 }
-  ;
-
-
-  *__CAG_ENV__::TRACK_UNDEFER_FAIL = (
-    $INC{'Test/Builder.pm'} || $INC{'Test/Builder2.pm'}
-      and
-    $0 =~ m|^ x?t / .+ \.t $|x
-  ) ? sub () { 1 }
-    : sub () { 0 }
-  ;
-}
 
 # Autodetect unless flag supplied
 my $xsa_autodetected;
