@@ -222,7 +222,7 @@ name passed as an argument.
 =cut
 
 sub get_simple {
-  return $_[0]->{$_[1]};
+  $_[0]->{$_[1]};
 }
 
 =head2 set_simple
@@ -241,7 +241,7 @@ for the field name passed as an argument.
 =cut
 
 sub set_simple {
-  return $_[0]->{$_[1]} = $_[2];
+  $_[0]->{$_[1]} = $_[2];
 }
 
 
@@ -317,11 +317,10 @@ sub set_inherited {
     } else {
       Carp::croak('Cannot set inherited value on an object instance that is not hash-based');
     };
-  } else {
-    no strict 'refs';
+  }
 
-    return ${$_[0].'::__cag_'.$_[1]} = $_[2];
-  };
+  no strict 'refs';
+  ${$_[0].'::__cag_'.$_[1]} = $_[2];
 }
 
 =head2 get_component_class
@@ -346,7 +345,7 @@ Gets the value of the specified component class.
 =cut
 
 sub get_component_class {
-  return $_[0]->get_inherited($_[1]);
+  $_[0]->get_inherited($_[1]);
 };
 
 =head2 set_component_class
@@ -391,7 +390,7 @@ sub set_component_class {
     }
   };
 
-  return $_[0]->set_inherited($_[1], $_[2]);
+  $_[0]->set_inherited($_[1], $_[2]);
 };
 
 =head1 INTERNAL METHODS
