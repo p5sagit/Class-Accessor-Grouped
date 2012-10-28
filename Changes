@@ -5,6 +5,7 @@ Revision history for Class::Accessor::Grouped.
     - Drop minimum perl to 5.6 (from 5.6.2)
     - Switch all module loading to Module::Runtime and lose
       dependency on Class::Inspector
+    - Simplify superclass traversal done by the 'inherited' group type
 
 0.10006 2011-12-30 03:52 (UTC)
     - Silence warnings resulting from incomplete can() overrides

@@ -282,16 +282,8 @@ sub get_inherited {
   my $cag_slot = '::__cag_'. $_[1];
   return ${$class.$cag_slot} if defined(${$class.$cag_slot});
 
-  # we need to be smarter about recalculation, as @ISA (thus supers) can very well change in-flight
-  my $cur_gen = mro::get_pkg_gen ($class);
-  if ( $cur_gen != ${$class.'::__cag_pkg_gen__'} ) {
-    @{$class.'::__cag_supers__'} = $_[0]->get_super_paths;
-    ${$class.'::__cag_pkg_gen__'} = $cur_gen;
-  }
-
-  for (@{$class.'::__cag_supers__'}) {
-    return ${$_.$cag_slot} if defined(${$_.$cag_slot});
-  };
+  do { return ${$_.$cag_slot} if defined(${$_.$cag_slot}) }
+    for $_[0]->get_super_paths;
 
   return undef;
 }
