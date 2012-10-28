@@ -405,7 +405,10 @@ inherited from. This is what drives the traversal done by L</get_inherited>.
 =cut
 
 sub get_super_paths {
-  return @{mro::get_linear_isa( ref($_[0]) || $_[0] )};
+  # get_linear_isa returns the class itself as the 1st element
+  # use @_ as a pre-allocated scratch array
+  (undef, @_) = @{mro::get_linear_isa( length( ref($_[0]) ) ? ref($_[0]) : $_[0] )};
+  @_;
 };
 
 =head2 make_group_accessor
