@@ -1,8 +1,7 @@
-use strictures 1;
-
 BEGIN {
   my @missing;
   for (qw/
+    strictures
     Class::Accessor::Grouped
     Class::XSAccessor
     Class::Accessor::Fast
@@ -12,6 +11,7 @@ BEGIN {
     Mouse
     Mousse
     Moo
+    Dumbbench
   /) {
     eval "require $_" or push @missing, $_;
   }
@@ -23,16 +23,28 @@ BEGIN {
 }
 
 
-use Benchmark qw/:hireswallclock cmpthese/;
+use strictures 1;
+use Benchmark::Dumb ':all';
 
 {
+  package Bench::Accessor::GrandParent;
+  use strictures 1;
+
+  use base 'Class::Accessor::Grouped';
+  __PACKAGE__->mk_group_accessors ('inherited', 'cag_inhp');
+  __PACKAGE__->cag_inhp('initial parent value');
+
+  package Bench::Accessor::Parent;
+  use strictures 1;
+  use base 'Bench::Accessor::GrandParent';
+
   package Bench::Accessor;
 
   use strictures 1;
 
   our @ISA;
 
-  use base qw/Class::Accessor::Grouped Class::Accessor::Fast/;
+  use base qw/Bench::Accessor::Parent Class::Accessor::Grouped Class::Accessor::Fast/;
   use Class::XSAccessor { accessors => [ 'xsa' ] };
 
   {
@@ -62,6 +74,8 @@ use Benchmark qw/:hireswallclock cmpthese/;
   }
 
   sub handmade {
+    no warnings;
+    no strict;
     @_ > 1 ? $_[0]->{handmade} = $_[1] : $_[0]->{handmade};
   }
 
@@ -93,16 +107,23 @@ sub _add_task {
   # we precompile the desired amount of loops so that the loop itself
   # does not get in the way with some sort of optimization or whatnot
 
+  use Devel::Dwarn;
+#  Dwarn { $meth => $bench_objs->{$slot}->can($meth) };
+
   my $perl;
-  for (1 .. 1000) {
+  for (1 .. 100) {
     $perl .= "
       \$::init_val = \$bench_objs->{$slot}->$meth;
       \$bench_objs->{$slot}->$meth($_);
       \$bench_objs->{$slot}->$meth(\$bench_objs->{$slot}->$meth + $_);
+      \$bench_objs->{$slot}->$meth(undef);
     ";
   }
 
-  $tasks->{$name} = eval "sub { $perl } " or die $@;
+  $tasks->{$name} = eval "sub { use warnings; use strict; $perl } " or die $@;
+
+  # prime things up (have the task run a couple times)
+  $tasks->{$name}->() for (1..5);
 }
 
 my $tasks = {
@@ -112,7 +133,7 @@ my $tasks = {
 #  }
 };
 
-for (qw/CAG CAG_XS CAG_INH CAF CAF_XS CAF_XSA XSA HANDMADE/) {
+for (qw/CAG CAG_XS CAG_INH CAG_INHP CAF CAF_XS CAF_XSA XSA HANDMADE/) {
   _add_task ($tasks, $_, lc($_), 'base');
 }
 
@@ -132,8 +153,12 @@ for (keys %$moose_based) {
   _add_moose_task ($tasks, moo => 'Moo');
 }
 
-for (1 .. 5) {
+#delete $tasks->{$_} for grep { $_ !~ /CAG/ } keys %$tasks;
+
+for (1 .. 3) {
   print "Perl $], take $_:\n";
-  cmpthese ( -1, $tasks );
+#  DB::enable_profile();
+  cmpthese ( '50.0001', $tasks );
+#  DB::disable_profile();
   print "\n";
 }
