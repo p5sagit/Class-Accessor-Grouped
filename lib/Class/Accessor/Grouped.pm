@@ -73,11 +73,13 @@ sub _mk_group_accessors {
   $maker = $self->can($maker) unless ref $maker;
 
   for (@fields) {
-    if( $_ eq 'DESTROY' ) {
-      Carp::carp("Having a data accessor named DESTROY in '$class' is unwise.");
-    }
 
     my ($name, $field) = (ref $_) ? (@$_) : ($_, $_);
+
+    for (qw/DESTROY AUTOLOAD CLONE/) {
+      Carp::carp("Having a data accessor named '$name' in '$class' is unwise.")
+        if $name eq $_;
+    }
 
     my $alias = "_${name}_accessor";
 
