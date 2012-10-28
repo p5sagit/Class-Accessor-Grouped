@@ -64,7 +64,7 @@ BEGIN {
 # %$*@!?&!&#*$!!!
 sub _mk_group_accessors {
   my($self, $maker, $group, @fields) = @_;
-  my $class = Scalar::Util::blessed $self || $self;
+  my $class = length (ref ($self) ) ? ref ($self) : $self;
 
   no strict 'refs';
   no warnings 'redefine';
@@ -83,14 +83,14 @@ sub _mk_group_accessors {
 
     my $alias = "_${name}_accessor";
 
-    for my $meth ($name, $alias) {
+    for ($name, $alias) {
 
       # the maker may elect to not return anything, meaning it already
       # installed the coderef for us (e.g. lack of Sub::Name)
-      my $cref = $self->$maker($group, $field, $meth)
+      my $cref = $self->$maker($group, $field, $_)
         or next;
 
-      my $fq_meth = "${class}::${meth}";
+      my $fq_meth = "${class}::$_";
 
       *$fq_meth = Sub::Name::subname($fq_meth, $cref);
         #unless defined &{$class."\:\:$field"}
@@ -264,25 +264,25 @@ instances.
 =cut
 
 sub get_inherited {
-  my $class;
-
-  if ( defined( $class = Scalar::Util::blessed $_[0] ) ) {
+  if ( length (ref ($_[0]) ) ) {
     if (Scalar::Util::reftype $_[0] eq 'HASH') {
       return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
+      # everything in @_ is aliased, an assignment won't work
+      splice @_, 0, 1, ref($_[0]);
     }
     else {
       Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
     }
   }
-  else {
-    $class = $_[0];
-  }
 
+  # if we got this far there is nothing in the instance
+  # OR this is a class call
+  # in any case $_[0] contains the class name (see splice above)
   no strict 'refs';
   no warnings 'uninitialized';
 
   my $cag_slot = '::__cag_'. $_[1];
-  return ${$class.$cag_slot} if defined(${$class.$cag_slot});
+  return ${$_[0].$cag_slot} if defined(${$_[0].$cag_slot});
 
   do { return ${$_.$cag_slot} if defined(${$_.$cag_slot}) }
     for $_[0]->get_super_paths;
@@ -311,7 +311,7 @@ hash-based object.
 =cut
 
 sub set_inherited {
-  if (defined Scalar::Util::blessed $_[0]) {
+  if (length (ref ($_[0]) ) ) {
     if (Scalar::Util::reftype $_[0] eq 'HASH') {
       return $_[0]->{$_[1]} = $_[2];
     } else {
@@ -598,7 +598,7 @@ my $maker_templates = {
           ? shift->$get('$field')
           : do {
             my \$caller = caller;
-            my \$class = ref \$_[0] || \$_[0];
+            my \$class = length( ref(\$_[0]) ) ? ref(\$_[0]) : \$_[0];
             Carp::croak(\"'\$caller' cannot alter the value of '$field' \".
                         \"(read-only attributes of class '\$class')\");
           }
@@ -617,7 +617,7 @@ my $maker_templates = {
           ? shift->$set('$field', \@_)
           : do {
             my \$caller = caller;
-            my \$class = ref \$_[0] || \$_[0];
+            my \$class = length ( ref(\$_[0]) ) ? ref(\$_[0]) : \$_[0];
             Carp::croak(\"'\$caller' cannot access the value of '$field' \".
                         \"(write-only attributes of class '\$class')\");
           }
@@ -637,9 +637,7 @@ my $original_simple_setter = __PACKAGE__->can ('set_simple');
 # Note!!! Unusual signature
 $gen_accessor = sub {
   my ($type, $class, $group, $field, $methname) = @_;
-  if (my $c = Scalar::Util::blessed( $class )) {
-    $class = $c;
-  }
+  $class = ref $class if length ref $class;
 
   # When installing an XSA simple accessor, we need to make sure we are not
   # short-circuiting a (compile or runtime) get_simple/set_simple override.
@@ -656,7 +654,7 @@ $gen_accessor = sub {
 
     my ($expected_cref, $cached_implementation);
     my $ret = $expected_cref = sub {
-      my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
+      my $current_class = length (ref ($_[0] ) ) ? ref ($_[0]) : $_[0];
 
       # $cached_implementation will be set only if the shim got
       # 'around'ed, in which case it is handy to avoid re-running
