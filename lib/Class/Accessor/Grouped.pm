@@ -178,6 +178,7 @@ sub mk_group_ro_accessors {
   my($self, $group, @fields) = @_;
 
   $self->_mk_group_accessors('make_group_ro_accessor', $group, @fields);
+  return;
 }
 
 =head2 mk_group_wo_accessors
@@ -202,6 +203,7 @@ sub mk_group_wo_accessors {
   my($self, $group, @fields) = @_;
 
   $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
+  return;
 }
 
 =head2 get_simple
