@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use inc::Module::Install 1;
+use inc::Module::Install 1.06;
 
 name 'Class-Accessor-Grouped';
 license 'perl';
@@ -12,7 +12,7 @@ requires 'Module::Runtime' => '0.012';
 requires 'Scalar::Util';
 requires 'MRO::Compat' if $] < 5.009_005;
 
-if (can_cc or $Module::Install::AUTHOR) {
+if (can_xs or $Module::Install::AUTHOR) {
   requires 'Sub::Name' => '0.05';
 
   # when changing don't forget to adjust lib/Class/Accessor/Grouped.pm as well
