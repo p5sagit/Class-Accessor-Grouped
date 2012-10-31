@@ -29,7 +29,8 @@ $USE_XS = $ENV{CAG_USE_XS}
   unless defined $USE_XS;
 
 BEGIN {
-  package __CAG_ENV__;
+  package # hide from PAUSE
+    __CAG_ENV__;
 
   die "Huh?! No minimum C::XSA version?!\n"
     unless $__minimum_xsa_version;
