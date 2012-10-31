@@ -1,164 +1,414 @@
-BEGIN {
-  my @missing;
-  for (qw/
-    strictures
-    Class::Accessor::Grouped
-    Class::XSAccessor
-    Class::Accessor::Fast
-    Class::Accessor::Fast::XS
-    Class::XSAccessor::Compat
-    Moose
-    Mouse
-    Mousse
-    Moo
-    Dumbbench
-  /) {
-    eval "require $_" or push @missing, $_;
-  }
+#!/usr/bin/perl
 
-  if (@missing) {
-    die sprintf "Missing modules necessary for benchmark:\n\n%s\n\n",
-      join ("\n", @missing);
-  }
-}
+use warnings FATAL => 'all';
+use strict;
 
+use B;
+use Time::HiRes ();
 
-use strictures 1;
-use Benchmark::Dumb ':all';
+# how many times to rerun everything unless -v is supplied
+my $bench_cycles = 4;
 
-{
-  package Bench::Accessor::GrandParent;
-  use strictures 1;
+my $dumbbench_settings = {
+  target_rel_precision  => 0.0003,
 
-  use base 'Class::Accessor::Grouped';
-  __PACKAGE__->mk_group_accessors ('inherited', 'cag_inhp');
-  __PACKAGE__->cag_inhp('initial parent value');
+  # no. of guaranteed initial runs
+  initial_runs          => 1500,
 
-  package Bench::Accessor::Parent;
-  use strictures 1;
-  use base 'Bench::Accessor::GrandParent';
+  # target absolute precision (in s)
+  target_abs_precision  => 0,
 
-  package Bench::Accessor;
+  # method for calculating uncertainty
+  variability_measure   => 'mad',
 
-  use strictures 1;
+  # no. of "sigma"s for the outlier rejection
+  outlier_rejection     => 2,
 
-  our @ISA;
+  # automatically determined at runtime to not run
+  # longer than $max_bench_duration seconds
+  #max_iterations       => xxx
 
-  use base qw/Bench::Accessor::Parent Class::Accessor::Grouped Class::Accessor::Fast/;
-  use Class::XSAccessor { accessors => [ 'xsa' ] };
-
-  {
-    local $Class::Accessor::Grouped::USE_XS = 0;
-    __PACKAGE__->mk_group_accessors ('simple', 'cag');
-  }
-  {
-    local $Class::Accessor::Grouped::USE_XS = 1;
-    __PACKAGE__->mk_group_accessors ('simple', 'cag_xs');
-  }
-
-  __PACKAGE__->mk_group_accessors ('inherited', 'cag_inh');
-  __PACKAGE__->cag_inh('initial value');
-
-  __PACKAGE__->mk_accessors('caf');
-
-  {
-    require Class::Accessor::Fast::XS;
-    local @ISA = 'Class::Accessor::Fast::XS';
-    __PACKAGE__->mk_accessors ('caf_xs');
-  }
-
-  {
-    require Class::XSAccessor::Compat;
-    local @ISA = 'Class::XSAccessor::Compat';
-    __PACKAGE__->mk_accessors ('caf_xsa');
-  }
-
-  sub handmade {
-    no warnings;
-    no strict;
-    @_ > 1 ? $_[0]->{handmade} = $_[1] : $_[0]->{handmade};
-  }
-
-}
-my $bench_objs = {
-  base => bless ({}, 'Bench::Accessor')
+  # our local addition to Dumbbench
+  max_bench_duration    => 20,
+  gettime_clock_id      => Time::HiRes::CLOCK_PROCESS_CPUTIME_ID(),
+  code_subiterations    => 250,
 };
 
-sub _add_moose_task {
-  my ($tasks, $name, $class) = @_;
-  my $meth = lc($name);
+my $acc_name = 'accessor';
+my $q_acc_name = B::perlstring($acc_name);
 
-  my $gen_class = "Bench::Accessor::$class";
-  eval <<"EOC";
-package $gen_class;
-use $class;
-has $meth => (is => 'rw');
-# some moosey thingies can not do this
-eval { __PACKAGE__->meta->make_immutable };
-EOC
+my $bench_plan = {
+  OTRW => {
+    provider => 'Object::Tiny::RW',
+    install => qq|
+      Object::Tiny::RW->import($q_acc_name);
+    |,
+  },
 
-  $bench_objs->{$name} = $gen_class->new;
-  _add_task ($tasks, $name, $meth, $name);
-}
+  CA => {
+    provider => 'Class::Accessor',
+    type => 'mk_accessors'
+  },
 
-sub _add_task {
-  my ($tasks, $name, $meth, $slot) = @_;
+  CAG_S => {
+    provider => 'Class::Accessor::Grouped',
+    add_isa => 1,
+    env => {
+      '$Class::Accessor::Grouped::USE_XS' => 0,
+    },
+    install => qq|
+      __PACKAGE__->mk_group_accessors (simple => $q_acc_name);
+    |,
+  },
 
-  # we precompile the desired amount of loops so that the loop itself
-  # does not get in the way with some sort of optimization or whatnot
+  CAG_S_XS => {
+    provider => 'Class::Accessor::Grouped',
+    add_isa => 1,
+    env => {
+      '$Class::Accessor::Grouped::USE_XS' => 1,
+    },
+    install => qq|
+      __PACKAGE__->mk_group_accessors (simple => $q_acc_name);
+    |,
+  },
 
-  use Devel::Dwarn;
-#  Dwarn { $meth => $bench_objs->{$slot}->can($meth) };
+  CAG_INH => {
+    provider => 'Class::Accessor::Grouped',
+    add_isa => 1,
+    install => qq|
+      __PACKAGE__->mk_group_accessors (inherited => $q_acc_name);
+      __PACKAGE__->$acc_name(42);
+    |,
+  },
 
-  my $perl;
-  for (1 .. 100) {
-    $perl .= "
-      \$::init_val = \$bench_objs->{$slot}->$meth;
-      \$bench_objs->{$slot}->$meth($_);
-      \$bench_objs->{$slot}->$meth(\$bench_objs->{$slot}->$meth + $_);
-      \$bench_objs->{$slot}->$meth(undef);
-    ";
-  }
+  CAG_INHP => {
+    provider => 'Class::Accessor::Grouped',
+    install => qq|
+      {
+        package Bench::Accessor::GrandParent;
+        our \@ISA = 'Class::Accessor::Grouped';
+        __PACKAGE__->mk_group_accessors (inherited => $q_acc_name);
+        __PACKAGE__->$acc_name(42);
 
-  $tasks->{$name} = eval "sub { use warnings; use strict; $perl } " or die $@;
+        package Bench::Accessor::Parent;
+        our \@ISA = 'Bench::Accessor::GrandParent';
+      }
 
-  # prime things up (have the task run a couple times)
-  $tasks->{$name}->() for (1..5);
-}
+      our \@ISA = 'Bench::Accessor::Parent';
+    |,
+  },
 
-my $tasks = {
-#  'direct' => sub {
-#    $bench_objs->{base}{direct} = 1;
-#    $bench_objs->{base}{direct} = $bench_objs->{base}{direct} + 1;
-#  }
+  CAL => {
+    provider => 'Class::Accessor::Lite',
+    install => qq|
+      Class::Accessor::Lite->mk_accessors($q_acc_name);
+    |,
+  },
+
+  CAF => {
+    provider => 'Class::Accessor::Fast',
+    type => 'mk_accessors'
+  },
+
+  CAF_XS => {
+    provider => 'Class::Accessor::Fast::XS',
+    type => 'mk_accessors'
+  },
+
+  CAF_XSAC => {
+    provider => 'Class::XSAccessor::Compat',
+    type => 'mk_accessors'
+  },
+
+  XSA => {
+    provider => 'Class::XSAccessor',
+    install => qq|
+      Class::XSAccessor->import({
+        accessors => [ $q_acc_name ]
+      }),
+    |,
+  },
+
+  HANDMADE => {
+    install => qq|
+      sub $acc_name {
+        no warnings;
+        use strict;
+        \@_ > 1 ? \$_[0]->{$q_acc_name} = \$_[1] : \$_[0]->{$q_acc_name};
+      }
+    |,
+  },
+
+  moOse => {
+    provider => 'Moose',
+    type => 'mooselike',
+  },
+
+  moo_XS => {
+    provider => 'Moo',
+    env => {
+      '$Method::Generate::Accessor::CAN_HAZ_XS' => 1,
+    },
+    type => 'mooselike',
+  },
+
+  moo => {
+    provider => 'Moo',
+    env => {
+      '$Method::Generate::Accessor::CAN_HAZ_XS' => 0,
+    },
+    type => 'mooselike',
+  },
+
+  moUse_XS => {
+    provider => 'Mouse',
+    type => 'mooselike',
+  },
+
+  moUse => {
+    provider => 'Mousse',
+    type => 'mooselike',
+  },
+
+  mo => {
+    provider => 'Mo',
+    type => 'mooselike',
+  },
 };
 
-for (qw/CAG CAG_XS CAG_INH CAG_INHP CAF CAF_XS CAF_XSA XSA HANDMADE/) {
-  _add_task ($tasks, $_, lc($_), 'base');
-}
 
-my $moose_based = {
-  moOse => 'Moose',
-  moo_XS => 'Moo',
-  moUse_XS => 'Mouse',
-  moUse => 'Mousse',
+##############################
+## Actual benching
+#####
+
+use Getopt::Long ();
+my $getopt = Getopt::Long::Parser->new(
+  config => [qw/gnu_getopt bundling_override no_ignore_case pass_through/]
+);
+my $opts = {
+  verbose => 0,
 };
-for (keys %$moose_based) {
-  _add_moose_task ($tasks, $_, $moose_based->{$_})
+$getopt->getoptions($opts, qw/
+  verbose|v+
+/);
+if (@ARGV) {
+  warn "\nIgnoring unrecognized option(s): @ARGV\n\n";
 }
 
-{
-  no warnings 'once';
-  local $Method::Generate::Accessor::CAN_HAZ_XS = 0;
-  _add_moose_task ($tasks, moo => 'Moo');
-}
+my $tasks = _generate_get_set_tasks(
+  plan => $bench_plan,
 
-#delete $tasks->{$_} for grep { $_ !~ /CAG/ } keys %$tasks;
+  iterations => $dumbbench_settings->{code_subiterations},
 
-for (1 .. 3) {
+  execute => sprintf <<EOS,
+<SCRATCH> = <OBJECT>->$acc_name;
+<OBJECT>->$acc_name ( <ITER> );
+<OBJECT>->$acc_name ( <OBJECT>->$acc_name + <ITER> );
+<OBJECT>->$acc_name ( undef );
+EOS
+
+);
+
+#delete $tasks->{$_} for grep { $_ ne 'CAG_S_XS' and $_ ne 'XSA' } keys %$tasks;
+#delete $tasks->{$_} for grep { $_ =~ /XS/} keys %$tasks;
+#die _dumper([$tasks, { map { ref($_) => ref($_)->can('accessor') } @::BENCH_objects }] );
+
+$bench_cycles = 1 if $opts->{verbose};
+
+for (1 .. $bench_cycles) {
   print "Perl $], take $_:\n";
-#  DB::enable_profile();
-  cmpthese ( '50.0001', $tasks );
-#  DB::disable_profile();
+  _bench_and_cmp($tasks, $dumbbench_settings, $opts->{verbose});
   print "\n";
+}
+
+exit;
+
+sub _generate_get_set_tasks {
+  my $args = { ref $_[0] ? %{$_[0]} : @_ };
+
+
+  my @missing = grep { ! eval "require $_" } (
+    'Dumbbench', map { $_->{provider} || () } values %{$args->{plan}||{}},
+  );
+  if (@missing) {
+    print STDERR "Missing modules necessary for benchmark:\n\n";
+    print join (' ', (sort @missing), "\n\n");
+    exit 1;
+  }
+
+  # expand shorthand specs
+  for (values %{$args->{plan}} ) {
+    if ($_->{type}) {
+      if ($_->{type} eq 'mooselike') {
+        $_->{has_constructor} = 1;
+        $_->{install} = qq|
+          use $_->{provider};
+          has $acc_name => (is => 'rw');
+          # not all moosey thingies have a finalizer
+          eval { __PACKAGE__->meta->make_immutable };
+        |;
+      }
+      elsif ($_->{type} eq 'mk_accessors') {
+        $_->{add_isa} = 1;
+        $_->{install} = qq|
+          __PACKAGE__->mk_accessors( $q_acc_name );
+        |;
+      }
+      else {
+        die "Unknown accessor maker type $_->{type}\n";
+      }
+    }
+  }
+
+  my $class_counter = 0;
+  no strict 'refs';
+  no warnings 'once';
+  my $tasks = { map {
+
+    my ($name, $plan) = ($_, $args->{plan}{$_});
+
+    my $class = sprintf 'Bench::Accessor::_%03d', $class_counter;
+
+    # otherwise the XS-shutoff won't work due to lazy-load
+    require Method::Generate::Accessor
+      if ( $plan->{provider}||'' ) eq 'Moo';
+
+    unshift @{"${class}::ISA"}, $plan->{provider}
+      if $plan->{add_isa};
+
+    my $init_src = <<EOS;
+package $class;
+use warnings FATAL => 'all';
+use strict;
+$plan->{install}
+EOS
+
+    $init_src = "local $_ = $plan->{env}{$_};\n$init_src"
+      for (keys %{$plan->{env}||{}});
+
+    eval "$init_src; 1" or die "$name initializer failed: $@\n$init_src\n";
+
+    $::BENCH_objects[$class_counter] = $plan->{has_constructor}
+      ? $class->new
+      : bless({}, $class)
+    ;
+
+    my $task_src = join "\n", map {
+      my $exec = $args->{execute};
+      $exec =~ s/<OBJECT>/\$::BENCH_objects[$class_counter]/g;
+      $exec =~ s/<SCRATCH>/\$::BENCH_scratch/g;
+      $exec =~ s/<ITER>/$_/g;
+      $exec;
+    } ( 1 .. $args->{iterations} );
+
+    $task_src = "sub { no warnings; use strict; $task_src }";
+    eval $task_src or die "Unable to compile bench-task for $plan->{provider}: $@\n";
+
+    $class_counter++;
+
+    ($name => {
+      src => $task_src,
+      class => $class,
+      provider => $plan->{provider},
+      accessor => $acc_name,
+    });
+
+  } keys %{$args->{plan}} };
+}
+
+
+##############################
+## Benchmarker Guts
+#####
+
+use Time::HiRes qw/gettimeofday tv_interval/;
+use List::Util 'shuffle';
+
+sub _bench_and_cmp {
+  #my ($tasks, $db_opts, $verbose) = @_;
+
+  require Dumbbench;
+  require Benchmark::Dumb;
+
+  local $| = 1;
+  Benchmark::Dumb::cmpthese ( _bench_tasks(@_) );
+}
+
+sub _bench_tasks {
+  my ($tasks, $db_opts, $verbose) = @_;
+
+  my $clr_ln = "\r\x1b[J";
+  my $time_override = eval "sub { Time::HiRes::clock_gettime($db_opts->{gettime_clock_id}) }"
+    or die "Unable to compile Time::HiRes::time override: $@\n";
+
+  my $prerun = 100;
+  my ($results, $t0, $itertime, $maxiter);
+
+  my @tnames = shuffle keys %$tasks;
+  for my $i (0..$#tnames) {
+    my $n = $tnames[$i];
+
+    my $c = eval $tasks->{$tnames[$i]}{src};
+
+    # fire several times to clear out deferred symtable muckery
+    # and whatnot
+    $c->() for (1..$prerun);
+
+    # crude timing of an iteration
+    $t0 = [gettimeofday()];
+    $c->() for (1..$prerun);
+    $itertime = tv_interval($t0) / $prerun;
+
+    $maxiter = int( $db_opts->{max_bench_duration} / $itertime );
+    die "Max iterations $maxiter too low for max runtime $db_opts->{max_bench_duration} ($itertime iter/s)"
+      if $maxiter < 50;
+
+    printf "%s%s: (task %d of %d, pretimed at %.03f/s)%s",
+      $verbose ? "\n" : $clr_ln,
+      $n,
+      $i+1,
+      $#tnames+1,
+      1 / $itertime,
+      $verbose ? "\n" : ' ... ',
+    ;
+
+    print( "$n: deparsed accessor: " . _dumper( $tasks->{$n}{class}->can($tasks->{$n}{accessor}) ) )
+      if ($verbose||0) == 2;
+
+    my $bench = Dumbbench->new(
+      %{ $db_opts || {} },
+      max_iterations => $maxiter,
+    );
+    $bench->add_instances(
+      Dumbbench::Instance::PerlSub->new(name => $n, code => $c),
+    );
+
+    {
+      no warnings 'redefine';
+      local *Time::HiRes::time = $time_override;
+      $t0 = [gettimeofday()];
+      $bench->run;
+      if ( $verbose ) {
+        printf "%s: Elapsed %.03f wall seconds\n", $n, tv_interval($t0);
+        $bench->report;
+      }
+    }
+
+
+    $results->{$n} = Benchmark::Dumb->_new(
+      instance => ($bench->instances)[0]
+    );
+  }
+
+  print ($verbose ? "\n" : $clr_ln);
+
+  $results;
+}
+
+my $d;
+sub _dumper {
+  ($d ||= do {
+    require Data::Dumper;
+    Data::Dumper->new([])->Indent(1)->Deparse(1)->Terse(1)->Sortkeys(1)->Quotekeys(0);
+  })->Values([@_])->Dump;
 }
