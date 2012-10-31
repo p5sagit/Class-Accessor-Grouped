@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Disable tests on perls where Class::XSAccessor emits broken
+      error messages (RT#74883, RT#80519)
+
 0.10006 2011-12-30 03:52 (UTC)
     - Silence warnings resulting from incomplete can() overrides
       hiding get/set_simple methods
