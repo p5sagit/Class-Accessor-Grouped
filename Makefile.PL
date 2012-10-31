@@ -4,7 +4,7 @@ use inc::Module::Install 1;
 
 name 'Class-Accessor-Grouped';
 license 'perl';
-perl_version '5.006002';
+perl_version '5.006';
 all_from 'lib/Class/Accessor/Grouped.pm';
 
 requires 'Carp';
