@@ -8,6 +8,8 @@ Revision history for Class::Accessor::Grouped.
     - Simplify superclass traversal done by the 'inherited' group type
     - Fix incorrect quoting of unusual hash keys (fieldnames)
     - Improve text of ro/wo violation exceptions
+    - Sanity-check accessor names for well-formedness
+      (qr/[A-Z_a-z][0-9A-Z_a-z]*/)
 
 0.10006 2011-12-30 03:52 (UTC)
     - Silence warnings resulting from incomplete can() overrides

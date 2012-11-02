@@ -77,10 +77,11 @@ sub _mk_group_accessors {
 
     my ($name, $field) = (ref $_) ? (@$_) : ($_, $_);
 
-    for (qw/DESTROY AUTOLOAD CLONE/) {
-      Carp::carp("Having a data accessor named '$name' in '$class' is unwise.")
-        if $name eq $_;
-    }
+    Carp::croak("Illegal accessor name '$name'")
+      unless $name =~ /\A[A-Z_a-z][0-9A-Z_a-z]*\z/;
+
+    Carp::carp("Having a data accessor named '$name' in '$class' is unwise.")
+      if $name =~ /\A(?: DESTROY | AUTOLOAD | CLONE )\z/x;
 
     my $alias = "_${name}_accessor";
 
