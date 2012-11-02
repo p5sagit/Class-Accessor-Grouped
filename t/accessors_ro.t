@@ -80,7 +80,7 @@ for my $name (sort keys %$test_accessors) {
 
   my $ro_regex = $test_accessors->{$name}{is_xs}
     ? qr/Usage\:.+$name.*\(self\)/
-    : qr/cannot alter the value of '\Q$field\E'/
+    : qr/$name(:?_accessor)?\Q' cannot alter its value (read-only attribute of class AccessorGroupsRO)/
   ;
 
   {

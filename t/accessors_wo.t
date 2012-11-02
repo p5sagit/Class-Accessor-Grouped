@@ -77,7 +77,7 @@ for my $name (sort keys %$test_accessors) {
 
   my $wo_regex = $test_accessors->{$name}{is_xs}
     ? qr/Usage\:.+$name.*\(self, newvalue\)/
-    : qr/cannot access the value of '\Q$field\E'/
+    : qr/$name(:?_accessor)?\Q' cannot access its value (write-only attribute of class AccessorGroupsWO)/
   ;
 
   # die on get via name/alias

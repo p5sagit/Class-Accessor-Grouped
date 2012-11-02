@@ -603,15 +603,14 @@ EOS
     pp_code => sub {
       # my ($group, $fieldname) = @_;
       my $quoted_fieldname = $perlstring->($_[1]);
-      sprintf  <<'EOS', $quoted_fieldname, $_[0], $quoted_fieldname;
+      sprintf  <<'EOS', $_[0], $quoted_fieldname;
 
 @_ > 1
   ? do {
-    my $caller = caller;
+    my ($meth) = (caller(0))[3] =~ /([^\:]+)$/;
     my $class = length( ref($_[0]) ) ? ref($_[0]) : $_[0];
-    Carp::croak(sprintf
-      "'%%s' cannot alter the value of '%%s' (read-only attribute of class '%%s')",
-      $caller, %s, $class
+    Carp::croak(
+      "'$meth' cannot alter its value (read-only attribute of class $class)"
     );
   }
   : shift->get_%s(%s)
@@ -624,16 +623,15 @@ EOS
     pp_code => sub {
       # my ($group, $fieldname) = @_;
       my $quoted_fieldname = $perlstring->($_[1]);
-      sprintf  <<'EOS', $_[0], ($quoted_fieldname) x 2;
+      sprintf  <<'EOS', $_[0], $quoted_fieldname;
 
 @_ > 1
   ? shift->set_%s(%s, @_)
   : do {
-    my $caller = caller;
+    my ($meth) = (caller(0))[3] =~ /([^\:]+)$/;
     my $class = length( ref($_[0]) ) ? ref($_[0]) : $_[0];
-    Carp::croak(sprintf
-      "'%%s' cannot access the value of '%%s' (write-only attribute of class '%%s')",
-      $caller, %s, $class
+    Carp::croak(
+      "'$meth' cannot access its value (write-only attribute of class $class)"
     );
   }
 EOS
