@@ -1,4 +1,4 @@
-use Test::More tests => 117;
+use Test::More tests => 137;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -60,6 +60,10 @@ my $test_accessors = {
   },
   lr2name => {
     custom_field => "lr2'field",
+  },
+  fieldname_torture => {
+    custom_field => join ('', map { chr($_) } (0..255) ),
+    is_xs => $use_xs,
   },
 };
 

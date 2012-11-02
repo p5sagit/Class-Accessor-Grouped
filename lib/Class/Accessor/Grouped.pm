@@ -571,58 +571,73 @@ if (! defined $USE_XS) {
   $xsa_autodetected++;
 }
 
+my $perlstring;
+if ($] < '5.008') {
+  require Data::Dumper;
+  my $d = Data::Dumper->new([])->Indent(0)->Purity(0)->Pad('')->Useqq(1)->Terse(1)->Freezer('')->Toaster('');
+  $perlstring = sub { $d->Values([shift])->Dump };
+}
+else {
+  require B;
+  $perlstring = \&B::perlstring;
+}
+
+
 my $maker_templates = {
   rw => {
     xs_call => 'accessors',
     pp_code => sub {
-      my $set = "set_$_[0]";
-      my $get = "get_$_[0]";
-      my $field = $_[1];
-      $field =~ s/'/\\'/g;
+      # my ($group, $fieldname) = @_;
+      my $quoted_fieldname = $perlstring->($_[1]);
+      sprintf <<'EOS', ($_[0], $quoted_fieldname) x 2;
 
-      "
-        \@_ != 1
-          ? shift->$set('$field', \@_)
-          : shift->$get('$field')
-      "
+@_ > 1
+  ? shift->set_%s(%s, @_)
+  : shift->get_%s(%s)
+EOS
+
     },
   },
   ro => {
     xs_call => 'getters',
     pp_code => sub {
-      my $get = "get_$_[0]";
-      my $field = $_[1];
-      $field =~ s/'/\\'/g;
+      # my ($group, $fieldname) = @_;
+      my $quoted_fieldname = $perlstring->($_[1]);
+      sprintf  <<'EOS', $quoted_fieldname, $_[0], $quoted_fieldname;
 
-      "
-        \@_ == 1
-          ? shift->$get('$field')
-          : do {
-            my \$caller = caller;
-            my \$class = length( ref(\$_[0]) ) ? ref(\$_[0]) : \$_[0];
-            Carp::croak(\"'\$caller' cannot alter the value of '$field' \".
-                        \"(read-only attributes of class '\$class')\");
-          }
-      "
+@_ > 1
+  ? do {
+    my $caller = caller;
+    my $class = length( ref($_[0]) ) ? ref($_[0]) : $_[0];
+    Carp::croak(sprintf
+      "'%%s' cannot alter the value of '%%s' (read-only attribute of class '%%s')",
+      $caller, %s, $class
+    );
+  }
+  : shift->get_%s(%s)
+EOS
+
     },
   },
   wo => {
     xs_call => 'setters',
     pp_code => sub {
-      my $set = "set_$_[0]";
-      my $field = $_[1];
-      $field =~ s/'/\\'/g;
+      # my ($group, $fieldname) = @_;
+      my $quoted_fieldname = $perlstring->($_[1]);
+      sprintf  <<'EOS', $_[0], ($quoted_fieldname) x 2;
 
-      "
-        \@_ != 1
-          ? shift->$set('$field', \@_)
-          : do {
-            my \$caller = caller;
-            my \$class = length ( ref(\$_[0]) ) ? ref(\$_[0]) : \$_[0];
-            Carp::croak(\"'\$caller' cannot access the value of '$field' \".
-                        \"(write-only attributes of class '\$class')\");
-          }
-      "
+@_ > 1
+  ? shift->set_%s(%s, @_)
+  : do {
+    my $caller = caller;
+    my $class = length( ref($_[0]) ) ? ref($_[0]) : $_[0];
+    Carp::croak(sprintf
+      "'%%s' cannot access the value of '%%s' (write-only attribute of class '%%s')",
+      $caller, %s, $class
+    );
+  }
+EOS
+
     },
   },
 };

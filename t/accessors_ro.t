@@ -1,4 +1,4 @@
-use Test::More tests => 48;
+use Test::More tests => 58;
 use Test::Exception;
 use strict;
 use warnings;
@@ -51,6 +51,10 @@ my $test_accessors = {
   },
   lr2name => {
     custom_field => "lr2'field",
+  },
+  fieldname_torture => {
+    custom_field => join ('', map { chr($_) } (1..255) ), # FIXME after RT#80569 is fixed 0..255 should work
+    is_xs => $use_xs,
   },
 };
 
