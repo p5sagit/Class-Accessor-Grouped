@@ -100,7 +100,7 @@ sub _mk_group_accessors {
   }
 };
 
-# coderef is setup at the end for clarity
+# $gen_accessor coderef is setup at the end for clarity
 my $gen_accessor;
 
 =head1 NAME
@@ -586,8 +586,8 @@ else {
 
 my $maker_templates = {
   rw => {
-    xs_call => 'accessors',
-    pp_code => sub {
+    cxsa_call => 'accessors',
+    pp_generator => sub {
       # my ($group, $fieldname) = @_;
       my $quoted_fieldname = $perlstring->($_[1]);
       sprintf <<'EOS', ($_[0], $quoted_fieldname) x 2;
@@ -600,8 +600,8 @@ EOS
     },
   },
   ro => {
-    xs_call => 'getters',
-    pp_code => sub {
+    cxsa_call => 'getters',
+    pp_generator => sub {
       # my ($group, $fieldname) = @_;
       my $quoted_fieldname = $perlstring->($_[1]);
       sprintf  <<'EOS', $_[0], $quoted_fieldname;
@@ -620,8 +620,8 @@ EOS
     },
   },
   wo => {
-    xs_call => 'setters',
-    pp_code => sub {
+    cxsa_call => 'setters',
+    pp_generator => sub {
       # my ($group, $fieldname) = @_;
       my $quoted_fieldname = $perlstring->($_[1]);
       sprintf  <<'EOS', $_[0], $quoted_fieldname;
@@ -693,7 +693,7 @@ $gen_accessor = sub {
           Class::XSAccessor->import(
             replace => 1,
             class => '__CAG__XSA__BREEDER__',
-            $maker_templates->{$type}{xs_call} => {
+            $maker_templates->{$type}{cxsa_call} => {
               $methname => $field,
             },
           );
@@ -744,7 +744,7 @@ $gen_accessor = sub {
             "Deferred version of method $cframe[3] invoked more than once (originally "
           . "invoked at $already_seen). This is a strong indication your code has "
           . 'cached the original ->can derived method coderef, and is using it instead '
-          . 'of the proper method re-lookup, causing performance regressions'
+          . 'of the proper method re-lookup, causing minor performance regressions'
           );
         }
         else {
@@ -782,7 +782,7 @@ $gen_accessor = sub {
   # no Sub::Name - just install the coderefs directly (compiling every time)
   elsif (__CAG_ENV__::NO_SUBNAME) {
     my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
-      $maker_templates->{$type}{pp_code}->($group, $field);
+      $maker_templates->{$type}{pp_generator}->($group, $field);
 
     no warnings 'redefine';
     local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
@@ -795,7 +795,7 @@ $gen_accessor = sub {
   else {
     ($accessor_maker_cache->{pp}{$type}{$group}{$field} ||= do {
       my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
-        $maker_templates->{$type}{pp_code}->($group, $field);
+        $maker_templates->{$type}{pp_generator}->($group, $field);
 
       local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
       eval "sub { my \$dummy; sub { \$dummy if 0; $src } }" or die $@;
