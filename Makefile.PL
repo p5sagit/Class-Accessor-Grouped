@@ -16,7 +16,7 @@ if (can_xs or $Module::Install::AUTHOR) {
   requires 'Sub::Name' => '0.05';
 
   # when changing don't forget to adjust lib/Class/Accessor/Grouped.pm as well
-  requires 'Class::XSAccessor' => '1.13'
+  requires 'Class::XSAccessor' => '1.15'
     if $] > '5.008'; # CXSA does not work on 5.6
 }
 

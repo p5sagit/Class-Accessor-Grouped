@@ -7,6 +7,7 @@ Revision history for Class::Accessor::Grouped.
       dependency on Class::Inspector
     - Simplify superclass traversal done by the 'inherited' group type
     - Fix incorrect quoting of unusual hash keys (fieldnames)
+    - Depend on newer bugfixed Class::XSAccessor 1.15
     - Improve text of ro/wo violation exceptions
     - Sanity-check accessor names for well-formedness
       (qr/[A-Z_a-z][0-9A-Z_a-z]*/)

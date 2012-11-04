@@ -20,7 +20,7 @@ $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev relea
 
 # when changing minimum version don't forget to adjust Makefile.PL as well
 our $__minimum_xsa_version;
-BEGIN { $__minimum_xsa_version = '1.13' }
+BEGIN { $__minimum_xsa_version = '1.15' }
 
 our $USE_XS;
 # the unless defined is here so that we can override the value
@@ -44,9 +44,22 @@ BEGIN {
     Module::Runtime::require_module('Sub::Name')
   } ? 0 : "$@" );
 
+  my $found_cxsa;
   constant->import( NO_CXSA => ( !NO_SUBNAME() and eval {
-    Module::Runtime::use_module('Class::XSAccessor' => $__minimum_xsa_version)
+    Module::Runtime::require_module('Class::XSAccessor');
+    $found_cxsa = Class::XSAccessor->VERSION;
+    Class::XSAccessor->VERSION($__minimum_xsa_version);
   } ) ? 0 : "$@" );
+
+  if (NO_CXSA() and $found_cxsa and !$ENV{CAG_OLD_XS_NOWARN}) {
+    warn(
+      'The installed version of Class::XSAccessor is too old '
+    . "(v$found_cxsa < v$__minimum_xsa_version). Please upgrade "
+    . "to instantly quadruple the performance of 'simple' accessors. "
+    . 'Set $ENV{CAG_OLD_XS_NOWARN} if you wish to disable this '
+    . "warning.\n"
+    );
+  }
 
   constant->import( BROKEN_GOTO => ($] < '5.008009') ? 1 : 0 );
 
