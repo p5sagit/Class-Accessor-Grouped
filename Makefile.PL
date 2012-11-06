@@ -12,11 +12,19 @@ requires 'Module::Runtime' => '0.012';
 requires 'Scalar::Util';
 requires 'MRO::Compat' if $] < 5.009_005;
 
-if (can_xs or $Module::Install::AUTHOR) {
-  requires 'Sub::Name' => '0.05';
+my $recommends = {
+  'Sub::Name' => '0.05',
+  # when changing CXSA version don't forget to adjust lib/Class/Accessor/Grouped.pm as well
+  'Class::XSAccessor' => '1.15',
+};
 
-  # when changing don't forget to adjust lib/Class/Accessor/Grouped.pm as well
-  requires 'Class::XSAccessor' => '1.15'
+recommends( $_ => $recommends->{$_} )
+  for keys %$recommends;
+
+if (can_xs or $Module::Install::AUTHOR) {
+  requires 'Sub::Name' => $recommends->{'Sub::Name'};
+
+  requires 'Class::XSAccessor' => $recommends->{'Class::XSAccessor'}
     if $] > '5.008'; # CXSA does not work on 5.6
 }
 
