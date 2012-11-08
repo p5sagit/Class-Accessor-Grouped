@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+0.10007 2012-11-08 11:54 (UTC)
     - Disable tests on perls where Class::XSAccessor emits broken
       error messages (RT#74883, RT#80519)
     - Drop minimum perl to 5.6 (from 5.6.2)
