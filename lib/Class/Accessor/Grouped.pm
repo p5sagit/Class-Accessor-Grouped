@@ -130,10 +130,18 @@ Class::Accessor::Grouped - Lets you build groups of accessors
  # make accessor that works for objects and classes
  __PACKAGE__->mk_group_accessors(inherited => 'awesome_level');
 
+ # make an accessor which calls a custom pair of getters/setters
+ sub get_column { ... this will be called when you do $obj->name() ... }
+ sub set_column { ... this will be called when you do $obj->name('foo') ... }
+ __PACKAGE__->mk_group_accessors(column => 'name');
+
 =head1 DESCRIPTION
 
 This class lets you build groups of accessors that will call different
-getters and setters.
+getters and setters. The documentation of this module still requires a lot
+of work (B<< volunteers welcome >.> >>), but in the meantime you can refer to
+L<this post|http://lo-f.at/glahn/2009/08/WritingPowerfulAccessorsForPerlClasses.html>
+for more information.
 
 =head1 METHODS
 
