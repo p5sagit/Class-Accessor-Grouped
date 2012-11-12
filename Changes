@@ -1,5 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Pass tests if Class::XSAccessor is available but Sub::Name isn't
+
 0.10007 2012-11-08 11:54 (UTC)
     - Disable tests on perls where Class::XSAccessor emits broken
       error messages (RT#74883, RT#80519)

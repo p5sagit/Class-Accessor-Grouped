@@ -45,11 +45,11 @@ BEGIN {
   } ? 0 : "$@" );
 
   my $found_cxsa;
-  constant->import( NO_CXSA => ( !NO_SUBNAME() and eval {
+  constant->import( NO_CXSA => ( NO_SUBNAME() || ( eval {
     Module::Runtime::require_module('Class::XSAccessor');
     $found_cxsa = Class::XSAccessor->VERSION;
     Class::XSAccessor->VERSION($__minimum_xsa_version);
-  } ) ? 0 : "$@" );
+  } ? 0 : "$@" ) ) );
 
   if (NO_CXSA() and $found_cxsa and !$ENV{CAG_OLD_XS_NOWARN}) {
     warn(

@@ -7,7 +7,11 @@ use Test::More;
 use lib 't/lib';
 
 BEGIN {
+  plan skip_all => "Sub::Name not available"
+    unless eval { require Sub::Name };
+
   require Class::Accessor::Grouped;
+
   my $xsa_ver = $Class::Accessor::Grouped::__minimum_xsa_version;
   eval {
     require Class::XSAccessor;
