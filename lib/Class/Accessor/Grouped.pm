@@ -654,6 +654,29 @@ EOS
   },
 };
 
+my $cag_eval = sub {
+  #my ($src, $no_warnings, $err_msg) = @_;
+
+  my $src = sprintf "{ %s warnings; use strict; no strict 'refs'; %s }",
+    $_[1] ? 'no' : 'use',
+    $_[0],
+  ;
+
+  my (@rv, $err);
+  {
+    local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
+    wantarray
+      ? @rv = eval $src
+      : $rv[0] = eval $src
+    ;
+    $err = $@ if $@ ne '';
+  }
+
+  Carp::croak(join ': ', ($_[2] || 'String-eval failed'), "$err\n$src\n" )
+    if defined $err;
+
+  wantarray ? @rv : $rv[0];
+};
 
 my ($accessor_maker_cache, $no_xsa_warned_classes);
 
@@ -797,9 +820,9 @@ $gen_accessor = sub {
     my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
       $maker_templates->{$type}{pp_generator}->($group, $field);
 
-    no warnings 'redefine';
-    local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
-    eval "sub ${class}::${methname} { $src }";
+    $cag_eval->(
+      "no warnings 'redefine'; sub ${class}::${methname} { $src }; 1",
+    );
 
     undef;  # so that no further attempt will be made to install anything
   }
@@ -810,8 +833,7 @@ $gen_accessor = sub {
       my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
         $maker_templates->{$type}{pp_generator}->($group, $field);
 
-      local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
-      eval "sub { my \$dummy; sub { \$dummy if 0; $src } }" or die $@;
+      $cag_eval->( "sub { my \$dummy; sub { \$dummy if 0; $src } }" );
     })->()
   }
 };
