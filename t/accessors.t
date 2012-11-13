@@ -1,5 +1,4 @@
-use Test::More tests => 138;
-use Test::Exception;
+use Test::More tests => 136;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -18,36 +17,6 @@ BEGIN {
 };
 
 use AccessorGroupsSubclass;
-
-SKIP: {
-  skip( 'Perl 5.6 does not like localizing globs', 1 )
-    if $] < '5.008';
-
-  my $obj = AccessorGroupsSubclass->new;
-  my $class = ref $obj;
-  my $name = 'multiple1';
-  my $alias = "_${name}_accessor";
-
-  my $warned = 0;
-  local $SIG{__WARN__} = sub {
-    $_[0] =~ /unwise/ ? $warned++ : warn(@_)
-  };
-
-  for (qw/DESTROY AUTOLOAD CLONE/) {
-    no warnings qw/once/;
-    no strict 'refs';
-
-    local *{"AccessorGroupsSubclass::$_"} = sub {};
-
-    $class->mk_group_accessors(warnings => $_);
-  }
-
-  is($warned, 3, 'Correct amount of warnings');
-};
-
-throws_ok { AccessorGroupsSubclass->mk_group_accessors(simple => '2wrvwrv;') }
-  qr/Illegal accessor name/;
-
 my $obj = AccessorGroupsSubclass->new;
 
 my $test_accessors = {

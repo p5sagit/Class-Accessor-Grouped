@@ -70,12 +70,26 @@ BEGIN {
       and
     $0 =~ m|^ x?t / .+ \.t $|x
   ) ? 1 : 0 );
+
+  *Class::Accessor::Grouped::perlstring = ($] < '5.008')
+    ? do {
+      require Data::Dumper;
+      my $d = Data::Dumper->new([])->Indent(0)->Purity(0)->Pad('')->Useqq(1)->Terse(1)->Freezer('')->Toaster('');
+      sub { $d->Values([shift])->Dump };
+    }
+    : do {
+      require B;
+      \&B::perlstring;
+    }
+  ;
 }
 
 # Yes this method is undocumented
 # Yes it should be a private coderef like all the rest at the end of this file
 # No we can't do that (yet) because the DBIC-CDBI compat layer overrides it
 # %$*@!?&!&#*$!!!
+
+my $illegal_accessors_warned;
 sub _mk_group_accessors {
   my($self, $maker, $group, @fields) = @_;
   my $class = length (ref ($self) ) ? ref ($self) : $self;
@@ -90,8 +104,45 @@ sub _mk_group_accessors {
 
     my ($name, $field) = (ref $_) ? (@$_) : ($_, $_);
 
-    Carp::croak("Illegal accessor name '$name'")
-      unless $name =~ /\A[A-Z_a-z][0-9A-Z_a-z]*\z/;
+    if ($name !~ /\A[A-Z_a-z][0-9A-Z_a-z]*\z/) {
+
+      if ($name =~ /\0/) {
+        Carp::croak(sprintf
+          "Illegal accessor name %s - nulls should never appear in stash keys",
+          perlstring($name),
+        );
+      }
+      elsif (! $ENV{CAG_ILLEGAL_ACCESSOR_NAME_OK} ) {
+        Carp::croak(
+          "Illegal accessor name '$name'. If you want CAG to attempt creating "
+        . 'it anyway (possible if Sub::Name is available) set '
+        . '$ENV{CAG_ILLEGAL_ACCESSOR_NAME_OK}'
+        );
+      }
+      elsif (__CAG_ENV__::NO_SUBNAME) {
+        Carp::croak(
+          "Unable to install accessor with illegal name '$name': "
+        . 'Sub::Name not available'
+        );
+      }
+      elsif (
+        # Because one of the former maintainers of DBIC::SL is a raging
+        # idiot, there is now a ton of DBIC code out there that attempts
+        # to create column accessors with illegal names. In the interest
+        # of not cluttering the logs of unsuspecting victims (unsuspecting
+        # because these accessors are unusuable anyway) we provide an
+        # explicit "do not warn at all" escape, until all such code is
+        # fixed (this will be a loooooong time >:(
+        $ENV{CAG_ILLEGAL_ACCESSOR_NAME_OK} ne 'DO_NOT_WARN'
+          and
+        ! $illegal_accessors_warned->{$class}++
+      ) {
+        Carp::carp(
+          "Installing illegal accessor '$name' into $class, see "
+        . 'documentation for more details'
+        );
+      }
+    }
 
     Carp::carp("Having a data accessor named '$name' in '$class' is unwise.")
       if $name =~ /\A(?: DESTROY | AUTOLOAD | CLONE )\z/x;
@@ -142,6 +193,38 @@ getters and setters. The documentation of this module still requires a lot
 of work (B<< volunteers welcome >.> >>), but in the meantime you can refer to
 L<this post|http://lo-f.at/glahn/2009/08/WritingPowerfulAccessorsForPerlClasses.html>
 for more information.
+
+=head2 Notes on accessor names
+
+In general method names in Perl are considered identifiers, and as such need to
+conform to the identifier specification of C<qr/\A[A-Z_a-z][0-9A-Z_a-z]*\z/>.
+While it is rather easy to invoke methods with non-standard names
+(C<< $obj->${\"anything goes"} >>), it is not possible to properly declare such
+methods without the use of L<Sub::Name>. Since this module must be able to
+function identically with and without its optional dependencies, starting with
+version C<0.10008> attempting to declare an accessor with a non-standard name
+is a fatal error (such operations would silently succeed since version
+C<0.08004>, as long as L<Sub::Name> is present, or otherwise would result in a
+syntax error during a string eval).
+
+Unfortunately in the years since C<0.08004> a rather large body of code
+accumulated in the wild that does attempt to declare accessors with funny
+names. One notable perpetrator is L<DBIx::Class::Schema::Loader>, which under
+certain conditions could create accessors of the C<column> group which start
+with numbers and/or some other punctuation (the proper way would be to declare
+columns with the C<accessor> attribute set to C<undef>).
+
+Therefore an escape mechanism is provided via the environment variable
+C<CAG_ILLEGAL_ACCESSOR_NAME_OK>. When set to a true value, one warning is
+issued B<per class> on attempts to declare an accessor with a non-conforming
+name, and as long as L<Sub::Name> is available all accessors will be properly
+created. Regardless of this setting, accessor names containing nulls C<"\0">
+are disallowed, due to various deficiencies in perl itself.
+
+If your code base has too many instances of illegal accessor declarations, and
+a fix is not feasible due to time constraints, it is possible to disable the
+warnings altogether by setting C<$ENV{CAG_ILLEGAL_ACCESSOR_NAME_OK}> to
+C<DO_NOT_WARN> (observe capitalization).
 
 =head1 METHODS
 
@@ -593,24 +676,13 @@ if (! defined $USE_XS) {
   $xsa_autodetected++;
 }
 
-my $perlstring;
-if ($] < '5.008') {
-  require Data::Dumper;
-  my $d = Data::Dumper->new([])->Indent(0)->Purity(0)->Pad('')->Useqq(1)->Terse(1)->Freezer('')->Toaster('');
-  $perlstring = sub { $d->Values([shift])->Dump };
-}
-else {
-  require B;
-  $perlstring = \&B::perlstring;
-}
-
 
 my $maker_templates = {
   rw => {
     cxsa_call => 'accessors',
     pp_generator => sub {
       # my ($group, $fieldname) = @_;
-      my $quoted_fieldname = $perlstring->($_[1]);
+      my $quoted_fieldname = perlstring($_[1]);
       sprintf <<'EOS', ($_[0], $quoted_fieldname) x 2;
 
 @_ > 1
@@ -624,7 +696,7 @@ EOS
     cxsa_call => 'getters',
     pp_generator => sub {
       # my ($group, $fieldname) = @_;
-      my $quoted_fieldname = $perlstring->($_[1]);
+      my $quoted_fieldname = perlstring($_[1]);
       sprintf  <<'EOS', $_[0], $quoted_fieldname;
 
 @_ > 1
@@ -644,7 +716,7 @@ EOS
     cxsa_call => 'setters',
     pp_generator => sub {
       # my ($group, $fieldname) = @_;
-      my $quoted_fieldname = $perlstring->($_[1]);
+      my $quoted_fieldname = perlstring($_[1]);
       sprintf  <<'EOS', $_[0], $quoted_fieldname;
 
 @_ > 1

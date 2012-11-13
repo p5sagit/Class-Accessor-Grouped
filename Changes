@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Allow disabling of accessor name checking introduced in 0.10007
     - Pass tests if Class::XSAccessor is available but Sub::Name isn't
 
 0.10007 2012-11-08 11:54 (UTC)
