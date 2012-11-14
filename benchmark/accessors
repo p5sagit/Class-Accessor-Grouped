@@ -22,7 +22,7 @@ my $dumbbench_settings = {
   variability_measure   => 'mad',
 
   # no. of "sigma"s for the outlier rejection
-  outlier_rejection     => 2,
+  outlier_rejection     => 1,
 
   # automatically determined at runtime to not run
   # longer than $max_bench_duration seconds
@@ -31,7 +31,7 @@ my $dumbbench_settings = {
   # our local addition to Dumbbench
   max_bench_duration    => 20,
   gettime_clock_id      => Time::HiRes::CLOCK_PROCESS_CPUTIME_ID(),
-  code_subiterations    => 250,
+  code_subiterations    => 200,
 };
 
 my $acc_name = 'accessor';
@@ -55,17 +55,6 @@ my $bench_plan = {
     add_isa => 1,
     env => {
       '$Class::Accessor::Grouped::USE_XS' => 0,
-    },
-    install => qq|
-      __PACKAGE__->mk_group_accessors (simple => $q_acc_name);
-    |,
-  },
-
-  CAG_S_XS => {
-    provider => 'Class::Accessor::Grouped',
-    add_isa => 1,
-    env => {
-      '$Class::Accessor::Grouped::USE_XS' => 1,
     },
     install => qq|
       __PACKAGE__->mk_group_accessors (simple => $q_acc_name);
@@ -115,20 +104,6 @@ my $bench_plan = {
     type => 'mk_accessors'
   },
 
-  CAF_XSAC => {
-    provider => 'Class::XSAccessor::Compat',
-    type => 'mk_accessors'
-  },
-
-  XSA => {
-    provider => 'Class::XSAccessor',
-    install => qq|
-      Class::XSAccessor->import({
-        accessors => [ $q_acc_name ]
-      }),
-    |,
-  },
-
   HANDMADE => {
     install => qq|
       sub $acc_name {
@@ -141,14 +116,6 @@ my $bench_plan = {
 
   moOse => {
     provider => 'Moose',
-    type => 'mooselike',
-  },
-
-  moo_XS => {
-    provider => 'Moo',
-    env => {
-      '$Method::Generate::Accessor::CAN_HAZ_XS' => 1,
-    },
     type => 'mooselike',
   },
 
@@ -174,6 +141,42 @@ my $bench_plan = {
     provider => 'Mo',
     type => 'mooselike',
   },
+
+  XSA => {
+    provider => 'Class::XSAccessor',
+    install => qq|
+      Class::XSAccessor->import({
+        accessors => [ $q_acc_name ]
+      }),
+    |,
+  },
+
+#  # all of the things below should be identical
+#  # to XSA, as they are essentially the same code
+#  # yet I can't get the nu,bers to agree <sratchhead>
+#  CAF_XSAC => {
+#    provider => 'Class::XSAccessor::Compat',
+#    type => 'mk_accessors'
+#  },
+#
+#  CAG_S_XS => {
+#    provider => 'Class::Accessor::Grouped',
+#    add_isa => 1,
+#    env => {
+#      '$Class::Accessor::Grouped::USE_XS' => 1,
+#    },
+#    install => qq|
+#      __PACKAGE__->mk_group_accessors (simple => $q_acc_name);
+#    |,
+#  },
+#
+#  moo_XS => {
+#    provider => 'Moo',
+#    env => {
+#      '$Method::Generate::Accessor::CAN_HAZ_XS' => 1,
+#    },
+#    type => 'mooselike',
+#  },
 };
 
 

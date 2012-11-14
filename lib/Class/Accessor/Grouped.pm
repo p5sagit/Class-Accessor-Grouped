@@ -592,26 +592,51 @@ accessors if this module is available on your system.
 
 =head2 Benchmark
 
-This is the result of a set/get/set loop benchmark on perl 5.12.1 with
-thread support, showcasing most popular accessor builders: L<Moose>, L<Mouse>,
-L<Moo>, L<CAF|Class::Accessor::Fast>, L<CAF_XS|Class::Accessor::Fast::XS>,
-L<XSA|Class::XSAccessor>, and L<CAF_XSA|Class::XSAccessor::Compat>:
+This is the benchmark of 200 get/get/set/get/set cycles on perl 5.16.2 with
+thread support, showcasing how this modules L<simple (CAG_S)|/get_simple>,
+L<inherited (CAG_INH)|/get_inherited> and L<inherited with parent-class data
+(CAG_INHP)|/get_inherited> accessors stack up against most popular accessor 
+builders:  L<Moose>, L<Moo>, L<Mo>, L<Mouse> (both pure-perl and XS variant),
+L<Object::Tiny::RW (OTRW)|Object::Tiny::RW>,
+L<Class::Accessor (CA)|Class::Accessor>,
+L<Class::Accessor::Lite (CAL)|Class::Accessor::Lite>,
+L<Class::Accessor::Fast (CAF)|Class::Accessor::Fast>,
+L<Class::Accessor::Fast::XS (CAF_XS)|Class::Accessor::Fast::XS>
+and L<Class::XSAccessor (XSA)|Class::XSAccessor>
 
-           Rate  CAG moOse  CAF moUse  moo HANDMADE CAF_XS moUse_XS moo_XS CAF_XSA  XSA CAG_XS
- CAG      169/s   --  -21% -24%  -32% -32%     -34%   -59%     -63%   -67%    -67% -67%   -67%
- moOse    215/s  27%    --  -3%  -13% -13%     -15%   -48%     -53%   -58%    -58% -58%   -58%
- CAF      222/s  31%    3%   --  -10% -10%     -13%   -46%     -52%   -57%    -57% -57%   -57%
- moUse    248/s  46%   15%  11%    --  -0%      -3%   -40%     -46%   -52%    -52% -52%   -52%
- moo      248/s  46%   15%  11%    0%   --      -3%   -40%     -46%   -52%    -52% -52%   -52%
- HANDMADE 255/s  50%   18%  14%    3%   3%       --   -38%     -45%   -50%    -51% -51%   -51%
- CAF_XS   411/s 143%   91%  85%   66%  66%      61%     --     -11%   -20%    -20% -21%   -21%
- moUse_XS 461/s 172%  114% 107%   86%  86%      81%    12%       --   -10%    -11% -11%   -11%
- moo_XS   514/s 204%  139% 131%  107% 107%     102%    25%      12%     --     -0%  -1%    -1%
- CAF_XSA  516/s 205%  140% 132%  108% 108%     103%    26%      12%     0%      --  -0%    -0%
- XSA      519/s 206%  141% 133%  109% 109%     104%    26%      13%     1%      0%   --    -0%
- CAG_XS   519/s 206%  141% 133%  109% 109%     104%    26%      13%     1%      0%   0%     --
+                      Rate CAG_INHP CAG_INH     CA  CAG_S    CAF  moOse   OTRW    CAL     mo  moUse HANDMADE    moo CAF_XS moUse_XS    XSA
 
-Benchmark program is available in the root of the
+ CAG_INHP  287.021+-0.02/s       --   -0.3% -10.0% -37.1% -53.1% -53.6% -53.7% -54.1% -56.9% -59.0%   -59.6% -59.8% -78.7%   -81.9% -83.5%
+
+ CAG_INH  288.025+-0.031/s     0.3%      --  -9.7% -36.9% -52.9% -53.5% -53.5% -53.9% -56.7% -58.8%   -59.5% -59.7% -78.6%   -81.9% -83.5%
+
+ CA       318.967+-0.047/s    11.1%   10.7%     -- -30.1% -47.9% -48.5% -48.5% -49.0% -52.1% -54.4%   -55.1% -55.3% -76.3%   -79.9% -81.7%
+
+ CAG_S    456.107+-0.054/s    58.9%   58.4%  43.0%     -- -25.4% -26.3% -26.4% -27.0% -31.5% -34.8%   -35.8% -36.1% -66.1%   -71.3% -73.9%
+
+ CAF      611.745+-0.099/s   113.1%  112.4%  91.8%  34.1%     --  -1.2%  -1.2%  -2.1%  -8.1% -12.6%   -14.0% -14.3% -54.5%   -61.5% -64.9%
+
+ moOse    619.051+-0.059/s   115.7%  114.9%  94.1%  35.7%   1.2%     --  -0.1%  -1.0%  -7.0% -11.6%   -12.9% -13.3% -54.0%   -61.0% -64.5%
+
+ OTRW       619.475+-0.1/s   115.8%  115.1%  94.2%  35.8%   1.3%   0.1%     --  -0.9%  -6.9% -11.5%   -12.9% -13.2% -54.0%   -61.0% -64.5%
+
+ CAL      625.106+-0.085/s   117.8%  117.0%  96.0%  37.1%   2.2%   1.0%   0.9%     --  -6.1% -10.7%   -12.1% -12.5% -53.5%   -60.6% -64.2%
+
+ mo         665.44+-0.12/s   131.8%  131.0% 108.6%  45.9%   8.8%   7.5%   7.4%   6.5%     --  -4.9%    -6.4%  -6.8% -50.5%   -58.1% -61.9%
+
+ moUse       699.9+-0.15/s   143.9%  143.0% 119.4%  53.5%  14.4%  13.1%  13.0%  12.0%   5.2%     --    -1.6%  -2.0% -48.0%   -55.9% -59.9%
+
+ HANDMADE   710.98+-0.16/s   147.7%  146.8% 122.9%  55.9%  16.2%  14.9%  14.8%  13.7%   6.8%   1.6%       --  -0.4% -47.2%   -55.2% -59.2%
+
+ moo        714.04+-0.13/s   148.8%  147.9% 123.9%  56.6%  16.7%  15.3%  15.3%  14.2%   7.3%   2.0%     0.4%     -- -46.9%   -55.0% -59.1%
+
+ CAF_XS   1345.55+-0.051/s   368.8%  367.2% 321.8% 195.0% 120.0% 117.4% 117.2% 115.3% 102.2%  92.2%    89.3%  88.4%     --   -15.3% -22.9%
+
+ moUse_XS    1588+-0.036/s   453.3%  451.3% 397.9% 248.2% 159.6% 156.5% 156.3% 154.0% 138.6% 126.9%   123.4% 122.4%  18.0%       --  -9.0%
+
+ XSA      1744.67+-0.052/s   507.9%  505.7% 447.0% 282.5% 185.2% 181.8% 181.6% 179.1% 162.2% 149.3%   145.4% 144.3%  29.7%     9.9%     --
+
+Benchmarking program is available in the root of the
 L<repository|http://search.cpan.org/dist/Class-Accessor-Grouped/>:
 
 =head2 Notes on Class::XSAccessor
