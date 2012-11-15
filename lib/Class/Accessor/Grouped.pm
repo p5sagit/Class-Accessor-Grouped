@@ -15,7 +15,7 @@ BEGIN {
   }
 }
 
-our $VERSION = '0.10007';
+our $VERSION = '0.10008';
 $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust Makefile.PL as well
