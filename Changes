@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+0.10009 2012-11-15 18:51 (UTC)
     - Stop leaking extra methods into the inheritance chain - there
       are plenty already
 
