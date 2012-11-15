@@ -21,7 +21,7 @@ BEGIN {
 }
 
 # rerun the regular 3 tests under the assumption of no Sub::Name
-for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
+for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t clean_namespace.t/) {
 
   subtest "$tname without Sub::Name (pass $_)" => sub {
     my $tfn = catfile($Bin, $tname);

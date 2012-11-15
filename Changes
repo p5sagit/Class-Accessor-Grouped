@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Stop leaking extra methods into the inheritance chain - there
+      are plenty already
+
 0.10008 2012-11-15 09:48 (UTC)
     - Allow disabling of accessor name checking introduced in 0.10007
     - Pass tests if Class::XSAccessor is available but Sub::Name isn't

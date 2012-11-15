@@ -23,7 +23,7 @@ BEGIN {
 
 # rerun the regular 3 tests under XSAccessor
 $Class::Accessor::Grouped::USE_XS = 1;
-for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
+for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t clean_namespace.t/) {
 
   subtest "$tname with USE_XS (pass $_)" => sub {
     my $tfn = catfile($Bin, $tname);
