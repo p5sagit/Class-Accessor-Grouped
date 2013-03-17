@@ -16,18 +16,17 @@ BEGIN {
   $use_xs = $Class::Accessor::Grouped::USE_XS;
 };
 
-use AccessorGroupsSubclass;
-my $obj = AccessorGroupsSubclass->new;
+require AccessorGroupsSubclass;
 
 my $test_accessors = {
   singlefield => {
-    is_xs => $use_xs,
+    is_simple => 1,
     has_extra => 1,
   },
   runtime_around => {
-    # even though this accessor is simple it will *not* be XSified
-    # due to the runtime 'around'
-    is_xs => 0,
+    # even though this accessor is declared as simple it will *not* be
+    # reinstalled due to the runtime 'around'
+    #is_simple => 1,
     has_extra => 1,
   },
   multiple1 => {
@@ -41,56 +40,68 @@ my $test_accessors = {
     custom_field => "lr2'field",
   },
   fieldname_torture => {
+    is_simple => 1,
     custom_field => join ('', map { chr($_) } (0..255) ),
-    is_xs => $use_xs,
   },
 };
 
-for my $name (sort keys %$test_accessors) {
-  my $alias = "_${name}_accessor";
-  my $field = $test_accessors->{$name}{custom_field} || $name;
-  my $extra = $test_accessors->{$name}{has_extra};
+for my $obj (
+  AccessorGroupsSubclass->new,
+) {
+  for my $name (sort keys %$test_accessors) {
+    my $alias = "_${name}_accessor";
+    my $field = $test_accessors->{$name}{custom_field} || $name;
+    my $extra = $test_accessors->{$name}{has_extra};
 
-  can_ok($obj, $name, $alias);
-  ok(!$obj->can($field))
-    if $field ne $name;
+    can_ok($obj, $name, $alias);
+    ok(!$obj->can($field))
+      if $field ne $name;
 
-  for my $meth ($name, $alias) {
-    my $cv = svref_2object( $obj->can($meth) );
-    is($cv->GV->NAME, $meth, "$meth accessor is named");
-    is($cv->GV->STASH->NAME, 'AccessorGroups', "$meth class correct");
+    # initial method name
+    for my $meth ($name, $alias) {
+      my $cv = svref_2object( $obj->can($meth) );
+      is($cv->GV->NAME, $meth, "initial $meth accessor is named");
+      is(
+        $cv->GV->STASH->NAME,
+        'AccessorGroups',
+        "initial $meth class correct",
+      );
+    }
+
+    is($obj->$name, undef);
+    is($obj->$alias, undef);
+
+    # get/set via name
+    is($obj->$name('a'), 'a');
+    is($obj->$name, 'a');
+    is($obj->{$field}, $extra ? 'a Extra tackled on' : 'a');
+
+    # alias gets same as name
+    is($obj->$alias, 'a');
+
+    # get/set via alias
+    is($obj->$alias('b'), 'b');
+    is($obj->$alias, 'b');
+    is($obj->{$field}, $extra ? 'b Extra tackled on' : 'b');
+
+    # alias gets same as name
+    is($obj->$name, 'b');
+
+    for my $meth ($name, $alias) {
+      my $cv = svref_2object( $obj->can($meth) );
+      is($cv->GV->NAME, $meth, "$meth accessor is named after operations");
+      is(
+        $cv->GV->STASH->NAME,
+        # XS deferred subs install into each caller, not into the original parent
+        ($use_xs and $test_accessors->{$name}{is_simple})
+          ? ref $obj
+          : 'AccessorGroups'
+        ,
+        "$meth class correct after operations",
+      );
+    }
   }
-
-  is($obj->$name, undef);
-  is($obj->$alias, undef);
-
-  # get/set via name
-  is($obj->$name('a'), 'a');
-  is($obj->$name, 'a');
-  is($obj->{$field}, $extra ? 'a Extra tackled on' : 'a');
-
-  # alias gets same as name
-  is($obj->$alias, 'a');
-
-  # get/set via alias
-  is($obj->$alias('b'), 'b');
-  is($obj->$alias, 'b');
-  is($obj->{$field}, $extra ? 'b Extra tackled on' : 'b');
-
-  # alias gets same as name
-  is($obj->$name, 'b');
-
-  for my $meth ($name, $alias) {
-    my $cv = svref_2object( $obj->can($meth) );
-    is($cv->GV->NAME, $meth, "$meth accessor is named after operations");
-    is(
-      $cv->GV->STASH->NAME,
-      # XS lazyinstalls install into each caller, not into the original parent
-      $test_accessors->{$name}{is_xs} ? 'AccessorGroupsSubclass' :'AccessorGroups',
-      "$meth class correct after operations",
-    );
-  }
-};
+}
 
 # important
 1;
