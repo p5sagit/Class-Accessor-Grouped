@@ -27,7 +27,7 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t clean_namespace.t/) 
     my $tfn = catfile($Bin, $tname);
 
     delete $INC{$_} for (
-      qw/AccessorGroups.pm AccessorGroupsRO.pm AccessorGroupsSubclass.pm AccessorGroupsWO.pm/,
+      qw/AccessorGroups.pm AccessorGroupsRO.pm AccessorGroupsSubclass.pm AccessorGroupsParent.pm AccessorGroupsWO.pm/,
       File::Spec::Unix->catfile ($tfn),
     );
 

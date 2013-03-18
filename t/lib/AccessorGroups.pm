@@ -1,24 +1,9 @@
-{
-  package AccessorGroups::BeenThereDoneThat;
-
-  use strict;
-  use warnings;
-  use base 'Class::Accessor::Grouped';
-
-  __PACKAGE__->mk_group_accessors('simple', 'singlefield');
-  __PACKAGE__->mk_group_accessors('multiple', qw/multiple1 multiple2/);
-}
-
-
 package AccessorGroups;
 use strict;
 use warnings;
-use base 'Class::Accessor::Grouped';
-__PACKAGE__->mk_group_accessors('simple', 'singlefield');
-__PACKAGE__->mk_group_accessors('multiple', qw/multiple1 multiple2/);
-__PACKAGE__->mk_group_accessors('listref', [qw/lr1name lr1;field/], [qw/lr2name lr2'field/]);
-__PACKAGE__->mk_group_accessors('simple', 'runtime_around');
-__PACKAGE__->mk_group_accessors('simple', [ fieldname_torture => join ('', map { chr($_) } (0..255) ) ]);
+use base 'AccessorGroupsParent';
+
+__PACKAGE__->mk_group_accessors('simple', [ fieldname_torture => join ('', reverse map { chr($_) } (0..255) ) ]);
 
 sub get_simple {
   my $v = shift->SUPER::get_simple (@_);
@@ -52,19 +37,9 @@ our $around_cref = sub {
 {
   no warnings qw/redefine/;
   eval <<'EOE';
-    sub AccessorGroups::runtime_around { goto $AccessorGroups::around_cref };
-    sub AccessorGroups::_runtime_around_accessor { goto $AccessorGroups::around_cref };
+    sub runtime_around { goto $around_cref };
+    sub _runtime_around_accessor { goto $around_cref };
 EOE
 }
-
-sub new {
-  return bless {}, shift;
-};
-
-foreach (qw/multiple listref/) {
-  no strict 'refs';
-  *{"get_$_"} = __PACKAGE__->can('get_simple');
-  *{"set_$_"} = __PACKAGE__->can('set_simple');
-};
 
 1;

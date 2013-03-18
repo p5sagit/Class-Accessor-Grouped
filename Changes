@@ -1,5 +1,12 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Fix bug with identically-named 'simple' accessors in different
+      classes set to access *differently named fields* getting their
+      field access mixed up
+    - Fix subtle pessimization when having identically-named accessors
+      in different classes leads to 'simple' implementations not being
+      replaced by Class::XSAccessor where appropriate
+
 0.10009 2012-11-15 18:51 (UTC)
     - Stop leaking extra methods into the inheritance chain - there
       are plenty already

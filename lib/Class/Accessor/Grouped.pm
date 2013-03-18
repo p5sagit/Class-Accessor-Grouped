@@ -786,6 +786,8 @@ my ($accessor_maker_cache, $no_xsa_warned_classes);
 my $original_simple_getter = __PACKAGE__->can ('get_simple');
 my $original_simple_setter = __PACKAGE__->can ('set_simple');
 
+my ($resolved_methods, $cag_produced_crefs);
+
 # Note!!! Unusual signature
 $gen_accessor = sub {
   my ($type, $class, $group, $field, $methname) = @_;
@@ -804,14 +806,10 @@ $gen_accessor = sub {
     die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_ENV__::NO_CXSA )
       if __CAG_ENV__::NO_CXSA;
 
-    my ($expected_cref, $cached_implementation);
-    my $ret = $expected_cref = sub {
+    my $ret = sub {
       my $current_class = length (ref ($_[0] ) ) ? ref ($_[0]) : $_[0];
 
-      # $cached_implementation will be set only if the shim got
-      # 'around'ed, in which case it is handy to avoid re-running
-      # this block over and over again
-      my $resolved_implementation = $cached_implementation->{$current_class} || do {
+      my $resolved_implementation = $resolved_methods->{$current_class}{$methname} ||= do {
         if (
           ($current_class->can('get_simple')||0) == $original_simple_getter
             &&
@@ -857,11 +855,7 @@ $gen_accessor = sub {
       # if after this shim was created someone wrapped it with an 'around',
       # we can not blindly reinstall the method slot - we will destroy the
       # wrapper. Silently chain execution further...
-      if ( !$expected_cref or $expected_cref != ($current_class->can($methname)||0) ) {
-
-        # there is no point in re-determining it on every subsequent call,
-        # just store for future reference
-        $cached_implementation->{$current_class} ||= $resolved_implementation;
+      if ( ! $cag_produced_crefs->{ $current_class->can($methname) || 0 } ) {
 
         # older perls segfault if the cref behind the goto throws
         # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
@@ -870,12 +864,14 @@ $gen_accessor = sub {
         goto $resolved_implementation;
       }
 
+
       if (__CAG_ENV__::TRACK_UNDEFER_FAIL) {
         my $deferred_calls_seen = do {
           no strict 'refs';
           \%{"${current_class}::__cag_deferred_xs_shim_invocations"}
         };
         my @cframe = caller(0);
+
         if (my $already_seen = $deferred_calls_seen->{$cframe[3]}) {
           Carp::carp (
             "Deferred version of method $cframe[3] invoked more than once (originally "
@@ -898,12 +894,15 @@ $gen_accessor = sub {
 
         my $fq_name = "${current_class}::${methname}";
         *$fq_name = Sub::Name::subname($fq_name, $resolved_implementation);
-
-        # need to update what the shim expects too *in case* its
-        # ->can was cached for some moronic reason
-        $expected_cref = $resolved_implementation;
-        Scalar::Util::weaken($expected_cref);
       }
+
+      # now things are installed - one ref less to carry
+      delete $resolved_methods->{$current_class}{$methname};
+
+      # but need to record it in the expectation registry *in case* it
+      # was cached via ->can for some moronic reason
+      Scalar::Util::weaken( $cag_produced_crefs->{$resolved_implementation} = $resolved_implementation );
+
 
       # older perls segfault if the cref behind the goto throws
       # http://rt.perl.org/rt3/Public/Bug/Display.html?id=35878
@@ -912,8 +911,9 @@ $gen_accessor = sub {
       goto $resolved_implementation;
     };
 
-    Scalar::Util::weaken($expected_cref); # to break the self-reference
-    $ret;
+    Scalar::Util::weaken($cag_produced_crefs->{$ret} = $ret);
+
+    $ret; # returning shim
   }
 
   # no Sub::Name - just install the coderefs directly (compiling every time)

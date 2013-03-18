@@ -19,11 +19,10 @@ BEGIN {
 }
 
 use AccessorGroupsSubclass;
-$Class::Accessor::Grouped::USE_XS = 1;
 
 my $obj = AccessorGroupsSubclass->new;
-my $obj2 = AccessorGroups->new;
 my $deferred_stub = AccessorGroupsSubclass->can('singlefield');
+my $obj2 = AccessorGroups->new;
 
 my @w;
 {
@@ -40,7 +39,7 @@ my @w;
 is (@w, 3, '3 warnings total');
 
 is (
-  scalar (grep { $_ =~ /^\QDeferred version of method AccessorGroups::singlefield invoked more than once/ } @w),
+  scalar (grep { $_ =~ /^\QDeferred version of method AccessorGroupsParent::singlefield invoked more than once/ } @w),
   3,
   '3 warnings produced as expected on cached invocation during testing',
 ) or do {
