@@ -788,6 +788,14 @@ my $original_simple_setter = __PACKAGE__->can ('set_simple');
 
 my ($resolved_methods, $cag_produced_crefs);
 
+sub CLONE {
+  my @crefs = grep { defined $_ } values %{$cag_produced_crefs||{}};
+  $cag_produced_crefs = @crefs
+    ? { map { $_ => $_ } @crefs }
+    : undef
+  ;
+}
+
 # Note!!! Unusual signature
 $gen_accessor = sub {
   my ($type, $class, $group, $field, $methname) = @_;

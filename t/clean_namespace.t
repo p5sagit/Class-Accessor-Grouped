@@ -39,6 +39,7 @@ is_deeply
     mk_group_accessors
     mk_group_ro_accessors
     mk_group_wo_accessors
+    CLONE
   /,
 )],
 'Expected list of methods in a freshly inheriting class';

@@ -1,5 +1,14 @@
+my $has_threads;
+BEGIN { eval '
+  use 5.008001;
+  use threads;
+  use threads::shared;
+  $has_threads = 1;
+' }
+
 use strict;
 use warnings;
+no warnings 'once';
 use FindBin qw($Bin);
 use File::Spec::Functions;
 use File::Spec::Unix (); # need this for %INC munging
@@ -25,8 +34,11 @@ BEGIN {
 our $SUBTESTING = 1;
 for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
 
-  for (1,2) {
-    note "\nTesting $tname without Sub::Name (pass $_)\n\n";
+  my $pass = 1;
+  share($pass) if $has_threads;
+
+  my $todo = sub {
+    note "\nTesting $tname without Sub::Name (pass @{[ $pass ++ ]})\n\n";
 
     my $tfn = catfile($Bin, $tname);
 
@@ -38,7 +50,18 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
     local $SIG{__WARN__} = sub { warn @_ unless $_[0] =~ /subroutine .+ redefined/i };
 
     do($tfn);
+  };
 
+  if ($has_threads) {
+    threads->create(sub {
+      threads->create(sub {
+        $todo->() for (1,2) }
+      )->join;
+      $todo->() for (1,2);
+    })->join for (1,2)
+  }
+  else {
+    $todo->() for (1, 2);
   }
 }
 
