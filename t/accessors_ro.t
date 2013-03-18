@@ -1,7 +1,8 @@
-use Test::More tests => 58;
+use Test::More;
 use Test::Exception;
 use strict;
 use warnings;
+no warnings 'once';
 use Config;
 use lib 't/lib';
 
@@ -108,5 +109,4 @@ for my $name (sort keys %$test_accessors) {
   is($obj->$alias, 'a');
 };
 
-#important
-1;
+done_testing unless $::SUBTESTING;

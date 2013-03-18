@@ -1,6 +1,7 @@
 use Test::More;
 use strict;
 use warnings;
+no warnings 'once';
 use lib 't/lib';
 use B qw/svref_2object/;
 
@@ -134,4 +135,4 @@ for my $class (qw(
   }
 }
 
-done_testing;
+done_testing unless $::SUBTESTING;

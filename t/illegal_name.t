@@ -1,4 +1,4 @@
-use Test::More tests => 4;
+use Test::More;
 use Test::Exception;
 use strict;
 use warnings;
@@ -19,7 +19,7 @@ use AccessorGroupsSubclass;
   is($warned, 3, 'Correct amount of unise warnings');
 }
 
-{
+if (eval { require Sub::Name } ) {
   my $warned = 0;
   local $SIG{__WARN__} = sub {
     $_[0] =~ /Installing illegal accessor/ ? $warned++ : warn(@_)
@@ -43,4 +43,5 @@ throws_ok {
   local $ENV{CAG_ILLEGAL_ACCESSOR_NAME_OK} = 1;
   AccessorGroupsSubclass->mk_group_accessors(simple => "2wr\0vwrv;")
 } qr/nulls should never appear/;
-1;
+
+done_testing;

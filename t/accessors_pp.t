@@ -20,10 +20,14 @@ BEGIN {
   require Class::Accessor::Grouped;
 }
 
-# rerun the regular 3 tests under the assumption of no Sub::Name
-for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t clean_namespace.t/) {
 
-  subtest "$tname without Sub::Name (pass $_)" => sub {
+# rerun the regular 3 tests under the assumption of no Sub::Name
+our $SUBTESTING = 1;
+for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
+
+  for (1,2) {
+    note "\nTesting $tname without Sub::Name (pass $_)\n\n";
+
     my $tfn = catfile($Bin, $tname);
 
     delete $INC{$_} for (
@@ -35,7 +39,7 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t clean_namespace.t/) 
 
     do($tfn);
 
-  } for (1 .. 2);
+  }
 }
 
 done_testing;

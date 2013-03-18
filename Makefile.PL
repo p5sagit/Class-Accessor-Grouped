@@ -28,7 +28,7 @@ if (can_xs or $Module::Install::AUTHOR) {
     if $] > '5.008'; # CXSA does not work on 5.6
 }
 
-test_requires 'Test::More' => '0.94';
+test_requires 'Test::More' => '0.88';
 test_requires 'Test::Exception' => '0.31';
 
 clean_files "Class-Accessor-Grouped-* t/var";

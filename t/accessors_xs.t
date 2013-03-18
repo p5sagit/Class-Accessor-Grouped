@@ -22,10 +22,14 @@ BEGIN {
 }
 
 # rerun the regular 3 tests under XSAccessor
+our $SUBTESTING = 1;
 $Class::Accessor::Grouped::USE_XS = 1;
-for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t clean_namespace.t/) {
 
-  subtest "$tname with USE_XS (pass $_)" => sub {
+for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
+
+  for (1,2) {
+    note "\nTesting $tname with USE_XS (pass $_)\n\n";
+
     my $tfn = catfile($Bin, $tname);
 
     for (
@@ -42,8 +46,7 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t clean_namespace.t/) 
     local $SIG{__WARN__} = sub { warn @_ unless $_[0] =~ /subroutine .+ redefined/i };
 
     do($tfn);
-
-  } for (1 .. 2);
+  }
 }
 
 done_testing;

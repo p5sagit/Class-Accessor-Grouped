@@ -1,7 +1,8 @@
-use Test::More tests => 46;
+use Test::More;
 use Test::Exception;
 use strict;
 use warnings;
+no warnings 'once';
 use Config;
 use lib 't/lib';
 
@@ -101,5 +102,4 @@ for my $name (sort keys %$test_accessors) {
   }
 };
 
-# important
-1;
+done_testing unless $::SUBTESTING;
