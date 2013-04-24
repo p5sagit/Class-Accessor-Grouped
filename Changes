@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+0.10010 2013-04-24 02:58 (UTC)
     - Fix bug with identically-named 'simple' accessors in different
       classes set to access *differently named fields* getting their
       field access mixed up
