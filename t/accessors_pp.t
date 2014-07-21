@@ -40,7 +40,7 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
   my $todo = sub {
     note "\nTesting $tname without Sub::Name (pass @{[ $pass ++ ]})\n\n";
 
-    my $tfn = catfile($Bin, $tname);
+    my ($tfn) = catfile($Bin, $tname) =~ /(.+)/;
 
     delete $INC{$_} for (
       qw/AccessorGroups.pm AccessorGroupsRO.pm AccessorGroupsSubclass.pm AccessorGroupsParent.pm AccessorGroupsWO.pm/,
