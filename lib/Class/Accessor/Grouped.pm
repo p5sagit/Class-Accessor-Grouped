@@ -71,13 +71,7 @@ BEGIN {
     $0 =~ m{ ^ (?: \. \/ )? x?t / .+ \.t $}x
   ) ? 1 : 0 );
 
-  require B;
-  # a perl 5.6 kludge
-  unless (B->can('perlstring')) {
-    require Data::Dumper;
-    my $d = Data::Dumper->new([])->Indent(0)->Purity(0)->Pad('')->Useqq(1)->Terse(1)->Freezer('')->Toaster('');
-    *B::perlstring = sub { $d->Values([shift])->Dump };
-  }
+  sub perlstring ($) { q{"}. quotemeta( shift ). q{"} };
 }
 
 # Yes this method is undocumented
@@ -105,7 +99,7 @@ sub _mk_group_accessors {
       if ($name =~ /\0/) {
         Carp::croak(sprintf
           "Illegal accessor name %s - nulls should never appear in stash keys",
-          B::perlstring($name),
+          __CAG_ENV__::perlstring($name),
         );
       }
       elsif (! $ENV{CAG_ILLEGAL_ACCESSOR_NAME_OK} ) {
@@ -703,7 +697,7 @@ my $maker_templates = {
     cxsa_call => 'accessors',
     pp_generator => sub {
       # my ($group, $fieldname) = @_;
-      my $quoted_fieldname = B::perlstring($_[1]);
+      my $quoted_fieldname = __CAG_ENV__::perlstring($_[1]);
       sprintf <<'EOS', ($_[0], $quoted_fieldname) x 2;
 
 @_ > 1
@@ -717,7 +711,7 @@ EOS
     cxsa_call => 'getters',
     pp_generator => sub {
       # my ($group, $fieldname) = @_;
-      my $quoted_fieldname = B::perlstring($_[1]);
+      my $quoted_fieldname = __CAG_ENV__::perlstring($_[1]);
       sprintf  <<'EOS', $_[0], $quoted_fieldname;
 
 @_ > 1
@@ -737,7 +731,7 @@ EOS
     cxsa_call => 'setters',
     pp_generator => sub {
       # my ($group, $fieldname) = @_;
-      my $quoted_fieldname = B::perlstring($_[1]);
+      my $quoted_fieldname = __CAG_ENV__::perlstring($_[1]);
       sprintf  <<'EOS', $_[0], $quoted_fieldname;
 
 @_ > 1
