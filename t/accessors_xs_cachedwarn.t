@@ -45,9 +45,15 @@ share(@w) if $has_threads;
 
     is ($obj->singlefield, 2, 'Normal get');
     is ($obj2->singlefield, undef, 'Normal get on unrelated object');
+
+    42;
   };
 
-  $has_threads ? threads->create( $todo )->join : $todo->();
+  is (
+    ($has_threads ? threads->create( $todo )->join : $todo->()),
+    42,
+    "Correct result after do-er",
+  )
 }
 
 is (@w, 3, '3 warnings total');

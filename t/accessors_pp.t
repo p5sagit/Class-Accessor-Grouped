@@ -42,26 +42,46 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
 
     my ($tfn) = catfile($Bin, $tname) =~ /(.+)/;
 
-    delete $INC{$_} for (
-      qw/AccessorGroups.pm AccessorGroupsRO.pm AccessorGroupsSubclass.pm AccessorGroupsParent.pm AccessorGroupsWO.pm/,
+    for (
+      qw|AccessorGroups.pm AccessorGroups/BeenThereDoneThat.pm AccessorGroupsRO.pm AccessorGroupsSubclass.pm AccessorGroupsParent.pm AccessorGroupsWO.pm|,
       File::Spec::Unix->catfile ($tfn),
-    );
+    ) {
+      delete $INC{$_};
+      no strict 'refs';
+      if (my ($mod) = $_ =~ /(.+)\.pm$/ ) {
+        %{"${mod}::"} = ();
+      }
+    }
 
     local $SIG{__WARN__} = sub { warn @_ unless $_[0] =~ /subroutine .+ redefined/i };
 
     do($tfn);
+
+    666;
   };
 
   if ($has_threads) {
-    threads->create(sub {
-      threads->create(sub {
-        $todo->() for (1,2) }
-      )->join;
-      $todo->() for (1,2);
-    })->join for (1,2)
+    for (1,2) {
+      is (
+        threads->create(sub {
+          is (
+            threads->create(sub {
+              $todo->();
+            })->join,
+            666,
+            'Innner thread joined ok',
+          );
+          777;
+        })->join,
+        777,
+        'Outer thread joined ok',
+      );
+
+      is ($todo->(), 666, "Unthreaded run ok") for (1,2);
+    }
   }
   else {
-    $todo->() for (1, 2);
+    is ($todo->(), 666, "Unthreaded run ok") for (1,2);
   }
 }
 

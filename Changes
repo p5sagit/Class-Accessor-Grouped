@@ -1,6 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
     - Soft-depend on newer (bugfixed and *simpler*) Class::XSAccessor 1.19
+    - More robust threading tests
 
 0.10010 2013-04-24 02:58 (UTC)
     - Fix bug with identically-named 'simple' accessors in different
