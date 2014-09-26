@@ -1,6 +1,6 @@
 my $has_threads;
 BEGIN { eval '
-  use 5.008004; # older perls get confused by $SIG fiddling
+  use 5.008005; # older perls get confused by $SIG fiddling under CXSA
   use threads;
   use threads::shared;
   $has_threads = 1;

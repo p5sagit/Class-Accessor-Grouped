@@ -15,7 +15,7 @@ requires 'MRO::Compat' if $] < 5.009_005;
 my $recommends = {
   'Sub::Name' => '0.05',
   # when changing CXSA version don't forget to adjust lib/Class/Accessor/Grouped.pm as well
-  'Class::XSAccessor' => '1.15',
+  'Class::XSAccessor' => '1.19',
 };
 
 recommends( $_ => $recommends->{$_} )

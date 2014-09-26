@@ -1,6 +1,6 @@
 my $has_threads;
 BEGIN { eval '
-  use 5.008001;
+  use 5.008005; # older perls segfault on threading under CXSA
   use threads;
   use threads::shared;
   $has_threads = 1;

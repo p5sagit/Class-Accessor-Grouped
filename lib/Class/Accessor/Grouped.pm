@@ -20,7 +20,7 @@ $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev relea
 
 # when changing minimum version don't forget to adjust Makefile.PL as well
 our $__minimum_xsa_version;
-BEGIN { $__minimum_xsa_version = '1.15' }
+BEGIN { $__minimum_xsa_version = '1.19' }
 
 our $USE_XS;
 # the unless defined is here so that we can override the value

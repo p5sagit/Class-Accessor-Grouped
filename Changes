@@ -1,5 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
+    - Soft-depend on newer (bugfixed and *simpler*) Class::XSAccessor 1.19
+
 0.10010 2013-04-24 02:58 (UTC)
     - Fix bug with identically-named 'simple' accessors in different
       classes set to access *differently named fields* getting their
