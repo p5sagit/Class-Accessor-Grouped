@@ -3,7 +3,6 @@ use Test::Exception;
 use strict;
 use warnings;
 no warnings 'once';
-use Config;
 use lib 't/lib';
 
 # we test the pure-perl versions only, but allow overrides
@@ -84,15 +83,12 @@ for my $name (sort keys %$test_accessors) {
     : qr/$name(:?_accessor)?\Q' cannot alter its value (read-only attribute of class AccessorGroupsRO)/
   ;
 
-  {
-    local $TODO = "Class::XSAccessor emits broken error messages on 5.10 or -DDEBUGGING 5.8"
-      if (
-        $test_accessors->{$name}{is_xs}
-          and
-        $] < '5.011'
-          and
-        ( $] > '5.009' or $Config{config_args} =~ /DEBUGGING/ )
-      );
+  SKIP: {
+    skip "Class::XSAccessor emits broken error messages on 5.10 and earlier", 1 if (
+      $test_accessors->{$name}{is_xs}
+        and
+      $] < '5.011'
+    );
 
     # die on set via name/alias
     throws_ok {
