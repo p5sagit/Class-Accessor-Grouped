@@ -66,16 +66,28 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
     for (1,2) {
       is (
         threads->create(sub {
-          is (
-            threads->create(sub {
-              $todo->();
-            })->join,
-            666,
-            'Innner thread joined ok',
-          );
-          777;
+
+          # nested threading of this sort badly blows up on 5.10.0 (fixed with 5.10.1)
+          unless ($] > 5.009 and $] < 5.010001) {
+            is (
+
+              threads->create(sub {
+                $todo->();
+              })->join,
+
+              666,
+
+              'Innner thread joined ok',
+            );
+
+            is ($todo->(), 666, "Intermediate result ok");
+          }
+
+          return 777;
         })->join,
+
         777,
+
         'Outer thread joined ok',
       );
 
