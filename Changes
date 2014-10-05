@@ -1,5 +1,6 @@
 Revision history for Class::Accessor::Grouped.
 
+0.10012 2014-10-05 21:22 (UTC)
     - Fix tests tickling deficient threads on perl 5.10.0
 
 0.10011 2014-09-26 11:24 (UTC)
