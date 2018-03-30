@@ -85,8 +85,19 @@ my %MM_ARGS = (
   (-e 'META.yml' ? () : test => { TESTS => 't/*.t xt/*.t xt/*/*.t' } ),
 );
 
-if (!-e 'META.yml') {
-  system('pod2text lib/Class/Accessor/Grouped.pm > README');
+{
+  package MY;
+  sub distdir {
+    my ($self, @arg) = @_;
+    my $frag = $self->SUPER::distdir(@arg);
+    $frag =~ s/^(distdir\s*:.*)/$1 create_readme/m;
+    $frag .= <<'END_MAKE';
+create_readme: create_distdir
+	pod2text lib/Class/Accessor/Grouped.pm > $(DISTVNAME)/README
+	cd $(DISTVNAME) && $(PERLRUN) "-MExtUtils::Manifest=maniadd" -e "maniadd({ README => 'Generated README' })"
+END_MAKE
+    $frag;
+  }
 }
 
 use Text::ParseWords;
