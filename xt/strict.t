@@ -1,18 +1,18 @@
 use strict;
 use warnings;
+use Test::More;
 
 BEGIN {
-  use lib 't/lib';
-  use Test::More;
-  use File::Find;
-  use File::Basename;
-
-  plan skip_all => 'set TEST_AUTHOR to enable this test' unless $ENV{TEST_AUTHOR};
-
-  eval 'use Test::Strict';
-  plan skip_all => 'Test::Strict not installed' if $@;
   plan skip_all => 'Need untaint in newer File::Find' if $] <= 5.006;
-};
+}
+
+BEGIN {
+  eval 'use Test::Strict; 1'
+    or plan skip_all => 'Test::Strict not installed';
+}
+
+use File::Find;
+use File::Basename;
 
 ## I hope this can go away if Test::Strict or File::Find::Rule
 ## finally run under -T. Until then, I'm on my own here. ;-)
@@ -49,4 +49,4 @@ if (scalar @files) {
 
 foreach (@files) {
   strict_ok($_);
-};
+}
