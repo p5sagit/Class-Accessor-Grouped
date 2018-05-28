@@ -82,7 +82,7 @@ my %MM_ARGS = (
     ("$]" < 5.009_005 ? ( 'MRO::Compat' => 0 ) : ()),
   },
   realclean => { FILES => 'README' },
-  (-e 'META.yml' ? () : test => { TESTS => 't/*.t xt/*.t xt/*/*.t' } ),
+  (-e 'META.yml' ? () : ( test => { TESTS => 't/*.t xt/*.t xt/*/*.t' } ) ),
 );
 
 {
