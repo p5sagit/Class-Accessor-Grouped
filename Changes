@@ -1,5 +1,7 @@
 Revision history for Class::Accessor::Grouped.
 
+    - releasing 0.10013_01 as stable
+
 0.10013_01 2018-05-28 13:37 (UTC)
     - convert packaging from Module::Install to plain ExtUtils::MakeMaker
     - fix running Makefile.PL when @INC does not contain '.' (perl 5.26).
